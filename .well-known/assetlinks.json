@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.kazunoriterada.reflexmath",
+        "sha256_cert_fingerprints": ["4D:47:29:45:74:2F:7E:AA:31:7E:6E:DC:CA:AB:9F:91:0B:0C:DB:D3:8C:36:46:FC:FA:3E:81:D5:E8:33:A0:15"]
+      }
+    }]
