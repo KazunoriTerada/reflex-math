@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加法分解構造の反射トレーニング</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Nunito:wght@700;900&family=M+PLUS+Rounded+1c:wght@500;700;900&family=Bangers&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a1a; --card: #1a1a2e; --primary: #ff2eea; --secondary: #00f5d4;
+  --accent: #fee440; --correct: #00f5d4; --wrong: #ff2eea; --text: #f0f0ff;
+  --text-light: #9090b8; --shadow: 0 0 20px rgba(255,46,234,.15), 0 0 40px rgba(0,245,212,.08);
+  --shadow-lg: 0 0 30px rgba(255,46,234,.25), 0 0 60px rgba(0,245,212,.12); --radius: 20px;
+  --fast: #00f5d4; --ok: #fee440; --slow: #ff9e00; --very-slow: #ff2eea;
+  --glow-pink: 0 0 12px rgba(255,46,234,.6); --glow-cyan: 0 0 12px rgba(0,245,212,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'M PLUS Rounded 1c','Nunito',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden;position:relative}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
+  radial-gradient(ellipse at 20% 20%, rgba(255,46,234,.08) 0%, transparent 50%),
+  radial-gradient(ellipse at 80% 80%, rgba(0,245,212,.08) 0%, transparent 50%),
+  radial-gradient(ellipse at 50% 50%, rgba(254,228,64,.04) 0%, transparent 60%);
+  pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.008) 2px,rgba(255,255,255,.008) 4px);pointer-events:none;z-index:0}
+.container{position:relative;z-index:1;width:100%;max-width:520px;padding:20px;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+.title{font-family:'Bangers',cursive;font-size:1.8rem;color:var(--text);margin:20px 0 16px;text-align:center;letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(255,46,234,.5),0 0 40px rgba(0,245,212,.3)}
+.title span{color:var(--primary);text-shadow:0 0 20px rgba(255,46,234,.8)}
+.screen{display:none;width:100%;flex-direction:column;align-items:center}
+.screen.active{display:flex}
+
+.section-label{font-family:'Bangers',cursive;font-size:1.05rem;color:var(--secondary);margin:18px 0 8px;align-self:flex-start;letter-spacing:2px;text-shadow:var(--glow-cyan)}
+.question-count-row{display:flex;gap:10px;width:100%}
+.count-btn{flex:1;background:var(--card);border:2px solid #333;border-radius:14px;padding:12px;font-size:1.2rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text);cursor:pointer;box-shadow:var(--shadow);transition:all .2s}
+.count-btn:hover{transform:translateY(-2px);border-color:var(--primary)}
+.count-btn.selected{border-color:var(--primary);background:rgba(255,46,234,.12);box-shadow:var(--glow-pink);color:var(--primary)}
+.target-row{display:flex;gap:8px;width:100%;flex-wrap:wrap}
+.target-btn{flex:1;background:var(--card);border:2px solid #333;border-radius:14px;padding:10px 6px;font-size:.8rem;font-weight:700;font-family:inherit;color:var(--text-light);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;text-align:center;line-height:1.3;min-width:60px}
+.target-btn:hover{transform:translateY(-2px);border-color:var(--secondary)}
+.target-btn.selected{border-color:var(--secondary);background:rgba(0,245,212,.1);box-shadow:var(--glow-cyan);color:var(--secondary)}
+.target-btn .target-time{font-size:1.3rem;font-weight:900;display:block;font-family:'Nunito',sans-serif}
+
+.start-btn{margin-top:24px;padding:16px 56px;font-family:'Bangers',cursive;font-size:1.6rem;color:#0a0a1a;background:linear-gradient(135deg,var(--secondary),#00d4b8,var(--accent));border:none;border-radius:60px;cursor:pointer;box-shadow:0 0 30px rgba(0,245,212,.4),0 0 60px rgba(254,228,64,.2);transition:all .25s;letter-spacing:4px;text-transform:uppercase}
+.start-btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 0 40px rgba(0,245,212,.6),0 0 80px rgba(254,228,64,.3)}
+.start-btn:active{transform:scale(.97)}
+
+.preview-stats{display:flex;gap:10px;width:100%;margin-top:4px}
+.preview-stat{flex:1;background:var(--card);border-radius:14px;padding:10px;box-shadow:var(--shadow);text-align:center;border:1px solid #333}
+.preview-stat .ps-label{font-size:.65rem;color:var(--text-light);font-weight:700}
+.preview-stat .ps-value{font-size:1.2rem;font-weight:900;color:var(--text)}
+
+.reset-link{margin-top:12px;font-size:.75rem;color:var(--text-light);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+.reset-link:hover{color:var(--primary)}
+
+.mode-row{display:flex;gap:10px;width:100%}
+.mode-btn{flex:1;background:var(--card);border:2px solid #333;border-radius:14px;padding:12px 8px;font-size:.85rem;font-weight:900;font-family:inherit;color:var(--text-light);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;text-align:center;line-height:1.3}
+.mode-btn:hover{transform:translateY(-2px);border-color:var(--primary)}
+.mode-btn.selected{border-color:var(--primary);background:rgba(255,46,234,.12);box-shadow:var(--glow-pink);color:var(--primary)}
+.mode-btn .mode-icon{font-size:1.4rem;display:block;margin-bottom:2px}
+
+.c-selector{width:100%;margin-top:8px}
+.c-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;width:100%}
+.c-btn{padding:10px 0;border:2px solid #333;border-radius:12px;font-size:1.1rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text-light);background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:all .2s;text-align:center}
+.c-btn:hover{transform:translateY(-1px);border-color:var(--secondary)}
+.c-btn.selected{border-color:var(--secondary);background:rgba(0,245,212,.12);color:var(--secondary);box-shadow:var(--glow-cyan)}
+.c-combos{font-size:.7rem;color:var(--text-light);margin-top:6px;line-height:1.5;text-align:center}
+
+.nav-row{display:flex;gap:10px;width:100%;margin-top:16px}
+.nav-btn{flex:1;background:var(--card);border:2px solid #333;border-radius:16px;padding:14px 10px;font-size:.9rem;font-weight:900;font-family:inherit;color:var(--text);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;text-align:center}
+.nav-btn:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 0 20px rgba(254,228,64,.3)}
+.nav-btn .nav-icon{font-size:1.4rem;display:block;margin-bottom:2px}
+.nav-btn:disabled{opacity:.4;cursor:default;transform:none}
+
+/* Assessment screen */
+.assess-card{background:var(--card);border-radius:28px;box-shadow:var(--shadow-lg);padding:24px 20px;width:100%;position:relative;overflow:hidden;margin-bottom:16px;border:1px solid #333}
+.assess-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--primary),var(--accent),var(--secondary))}
+.assess-section-title{font-family:'Bangers',cursive;font-size:1.05rem;color:var(--accent);margin:18px 0 10px;display:flex;align-items:center;gap:6px;letter-spacing:1px;text-shadow:0 0 10px rgba(254,228,64,.3)}
+
+.mastery-overview{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.mastery-box{background:rgba(255,255,255,.03);border-radius:14px;padding:12px;text-align:center;border:1px solid #333}
+.mastery-box .mb-value{font-size:1.8rem;font-weight:900;font-family:'Nunito',sans-serif}
+.mastery-box .mb-label{font-size:.7rem;font-weight:700;color:var(--text-light)}
+.mastery-box.good .mb-value{color:var(--correct);text-shadow:var(--glow-cyan)}
+.mastery-box.mid .mb-value{color:var(--ok)}
+.mastery-box.bad .mb-value{color:var(--wrong);text-shadow:var(--glow-pink)}
+
+.mastery-bar-container{width:100%;height:20px;background:#1a1a2e;border-radius:10px;overflow:hidden;display:flex;margin-bottom:4px;border:1px solid #333}
+.mastery-bar-seg{height:100%;transition:width .6s}
+.mastery-bar-legend{display:flex;gap:12px;font-size:.7rem;color:var(--text-light);font-weight:700;margin-bottom:12px;flex-wrap:wrap}
+.mastery-bar-legend span{display:flex;align-items:center;gap:4px}
+.mastery-bar-legend .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+.type-breakdown{width:100%}
+.type-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #2a2a3e}
+.type-row:last-child{border-bottom:none}
+.type-name{font-size:.8rem;font-weight:900;color:var(--text);min-width:70px}
+.type-bar-bg{flex:1;height:10px;background:#2a2a3e;border-radius:5px;overflow:hidden}
+.type-bar-fill{height:100%;border-radius:5px;transition:width .5s}
+.type-time{font-size:.8rem;font-weight:900;min-width:45px;text-align:right}
+
+.back-btn{width:100%;padding:14px;font-family:'Bangers',cursive;font-size:1.1rem;border:2px solid #333;border-radius:16px;cursor:pointer;transition:all .2s;background:var(--card);color:var(--text);letter-spacing:2px;margin-top:8px}
+.back-btn:hover{transform:translateY(-2px);border-color:var(--secondary);box-shadow:var(--glow-cyan)}
+
+/* Bimodal histogram */
+.bimodal-chart{width:100%;padding:8px 0}
+.bimodal-bars{display:flex;align-items:flex-end;gap:2px;height:80px;padding:0 4px}
+.bimodal-bar{flex:1;border-radius:3px 3px 0 0;min-width:4px;position:relative;transition:height .4s}
+.bimodal-bar.fast{background:var(--correct);box-shadow:0 0 6px rgba(0,245,212,.4)}
+.bimodal-bar.slow{background:var(--wrong);box-shadow:0 0 6px rgba(255,46,234,.4)}
+.bimodal-labels{display:flex;justify-content:space-between;padding:4px 4px 0;font-size:.55rem;color:var(--text-light);font-weight:700}
+.bimodal-theta-line{position:absolute;top:0;bottom:0;width:2px;background:var(--primary);z-index:2;box-shadow:0 0 8px rgba(255,46,234,.8)}
+.bimodal-theta-label{position:absolute;top:-16px;font-size:.6rem;font-weight:900;color:var(--primary);white-space:nowrap;transform:translateX(-50%)}
+.bimodal-b-line{position:absolute;top:0;bottom:0;width:2px;background:var(--secondary);z-index:2;box-shadow:0 0 8px rgba(0,245,212,.8)}
+.bimodal-b-label{position:absolute;top:-16px;font-size:.6rem;font-weight:900;color:var(--secondary);white-space:nowrap;transform:translateX(-50%)}
+.bimodal-info{font-size:.75rem;color:var(--text-light);line-height:1.6;padding:4px 0 8px;text-align:center}
+.bimodal-info span{font-weight:900}
+.bimodal-chart-wrapper{position:relative;width:100%;margin-top:18px}
+
+/* Game */
+.top-bar{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px}
+.stat-box{background:var(--card);border-radius:14px;padding:8px 14px;box-shadow:var(--shadow);text-align:center;min-width:70px;border:1px solid #333}
+.stat-label{font-size:.65rem;color:var(--text-light);font-weight:700}
+.stat-value{font-size:1.2rem;font-weight:900;color:var(--text)}
+.stat-value.timer{color:var(--accent);font-family:'Nunito',sans-serif;text-shadow:0 0 10px rgba(254,228,64,.4)}
+
+.progress-bar-container{width:100%;height:10px;background:#1a1a2e;border-radius:10px;margin:6px 0 12px;overflow:hidden;border:1px solid #333}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent),var(--secondary));border-radius:10px;transition:width .4s}
+
+.question-card{background:var(--card);border-radius:28px;box-shadow:var(--shadow-lg);padding:24px 20px 20px;width:100%;text-align:center;margin-bottom:12px;position:relative;overflow:hidden;border:1px solid #333}
+.question-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--primary),var(--accent),var(--secondary))}
+
+.q-badge{font-size:.65rem;font-weight:700;padding:2px 10px;border-radius:20px;display:inline-block;margin-bottom:4px}
+.q-badge.weak{background:rgba(255,46,234,.15);color:var(--wrong)}
+.q-badge.new{background:rgba(0,245,212,.15);color:var(--secondary)}
+.q-badge.slow{background:rgba(255,158,0,.15);color:var(--slow)}
+
+.question-number{font-size:.8rem;color:var(--text-light);font-weight:700;margin-bottom:8px}
+
+.question-text{font-size:3.5rem;font-weight:900;color:var(--text);letter-spacing:4px;margin:8px 0;font-family:'Nunito',sans-serif;line-height:1.2;min-height:4.5rem;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;text-shadow:0 0 20px rgba(255,255,255,.1)}
+.q-num{color:var(--text)}
+.q-op{color:var(--accent);margin:0 2px}
+.q-eq{color:var(--accent)}
+.q-blank{display:inline-block;min-width:60px;color:var(--primary);position:relative;text-shadow:var(--glow-pink)}
+
+.speed-indicator{height:30px;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
+.speed-dot{width:8px;height:8px;border-radius:50%;transition:background .3s}
+.speed-label{font-size:.75rem;font-weight:700;min-width:60px}
+
+.countdown-bar-container{width:100%;height:8px;background:#2a2a3e;border-radius:4px;margin:8px 0 2px;overflow:hidden}
+.countdown-bar-fill{height:100%;border-radius:4px;background:var(--correct);transform-origin:left;transition:none;box-shadow:0 0 8px rgba(0,245,212,.4)}
+.countdown-bar-fill.animate{transition:transform linear,background linear}
+.countdown-bar-fill.warn{background:var(--slow);box-shadow:0 0 8px rgba(255,158,0,.4)}
+.countdown-bar-fill.danger{background:var(--wrong);box-shadow:0 0 8px rgba(255,46,234,.6)}
+
+.feedback{height:40px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;opacity:0;transition:opacity .25s}
+.feedback.show{opacity:1}
+.feedback.correct{color:var(--correct);text-shadow:var(--glow-cyan)}
+.feedback.wrong{color:var(--wrong);text-shadow:var(--glow-pink)}
+
+.next-btn{display:none;margin-top:8px;padding:10px 28px;font-size:1rem;font-weight:900;font-family:'Bangers',cursive;color:#0a0a1a;background:linear-gradient(135deg,var(--secondary),var(--accent));border:none;border-radius:30px;cursor:pointer;box-shadow:0 0 20px rgba(0,245,212,.4);transition:all .2s;animation:popIn .3s ease;letter-spacing:2px}
+.next-btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,245,212,.6)}
+.next-btn:active{transform:scale(.95)}
+
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;max-width:380px}
+.num-btn{aspect-ratio:1;border:2px solid #333;border-radius:16px;font-size:1.7rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text);background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none}
+.num-btn:hover{transform:translateY(-2px);border-color:var(--secondary);box-shadow:var(--glow-cyan)}
+.num-btn:active{transform:scale(.93);border-color:var(--primary);box-shadow:var(--glow-pink)}
+.num-btn.disabled{color:#333;pointer-events:none;box-shadow:none;border-color:#222}
+
+/* Voice */
+.voice-toggle-row{display:flex;align-items:center;gap:12px;width:100%}
+.voice-toggle-btn{display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:14px;border:2px solid #333;background:var(--card);font-family:inherit;font-size:.95rem;font-weight:900;color:var(--text-light);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;flex-shrink:0}
+.voice-toggle-btn:hover{transform:translateY(-2px);border-color:var(--secondary)}
+.voice-toggle-btn.active{border-color:var(--secondary);background:rgba(0,245,212,.1);color:var(--secondary);box-shadow:var(--glow-cyan)}
+.voice-toggle-icon{font-size:1.3rem}
+.voice-toggle-desc{font-size:.75rem;color:var(--text-light);line-height:1.3}
+
+.voice-status{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;padding:6px 14px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:.8rem;font-weight:700;color:var(--secondary);border:1px solid #333}
+.voice-pulse{width:10px;height:10px;border-radius:50%;background:var(--secondary);animation:pulse 1s infinite;box-shadow:var(--glow-cyan)}
+.voice-status.error{color:var(--wrong)}
+.voice-status.error .voice-pulse{background:var(--wrong);animation:none;box-shadow:var(--glow-pink)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* Result */
+.result-card{background:var(--card);border-radius:28px;box-shadow:var(--shadow-lg);padding:26px 22px;width:100%;text-align:center;position:relative;overflow:hidden;border:1px solid #333}
+.result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--correct),var(--primary))}
+.result-emoji{font-size:3.5rem;margin-bottom:6px}
+.result-message{font-family:'Bangers',cursive;font-size:1.6rem;color:var(--text);margin-bottom:16px;letter-spacing:2px;text-shadow:0 0 15px rgba(255,255,255,.1)}
+.result-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.result-stat{background:rgba(255,255,255,.03);border-radius:14px;padding:12px;border:1px solid #333}
+.result-stat .rs-label{font-size:.75rem;color:var(--text-light);font-weight:700}
+.result-stat .rs-value{font-size:1.4rem;font-weight:900;color:var(--text)}
+.result-stat .rs-value.highlight{color:var(--primary);text-shadow:var(--glow-pink)}
+
+.speed-summary{background:rgba(255,255,255,.03);border-radius:14px;padding:14px;margin-bottom:16px;text-align:center;border:1px solid #333}
+.speed-summary .ss-title{font-size:.8rem;font-weight:700;color:var(--text-light);margin-bottom:8px}
+.speed-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:50px}
+.speed-bar{width:16px;border-radius:4px 4px 0 0;transition:height .5s}
+.speed-bar-labels{display:flex;justify-content:center;gap:0;margin-top:4px;font-size:.55rem;color:var(--text-light);font-weight:700}
+.speed-bar-labels span{width:16px;text-align:center;margin:0 1.5px}
+
+.mistakes-section{margin-top:14px;text-align:left;width:100%}
+.mistakes-title{font-size:.85rem;font-weight:700;color:var(--text-light);margin-bottom:6px}
+.mistake-item{background:rgba(255,46,234,.06);border:1px solid rgba(255,46,234,.2);border-radius:12px;padding:8px 12px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.9rem}
+.mistake-q{color:var(--text)}
+.mistake-info{text-align:right;font-size:.75rem;color:var(--text-light)}
+
+.heatmap-section{margin-top:18px;width:100%;text-align:left}
+.heatmap-title{font-size:.85rem;font-weight:700;color:var(--text-light);margin-bottom:4px}
+.heatmap-subtitle{font-size:.7rem;color:var(--text-light);margin-bottom:8px}
+.heatmap-grid{display:grid;gap:2px;grid-template-columns:repeat(10,1fr)}
+.hm-cell{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-family:'Nunito',sans-serif;font-size:.5rem;font-weight:700;cursor:default}
+.hm-header{background:transparent!important;color:var(--text-light);font-weight:900;font-size:.6rem}
+.hm-empty{background:transparent!important}
+.legend{display:flex;align-items:center;gap:5px;margin-top:8px;justify-content:center;font-size:.65rem;color:var(--text-light)}
+.legend-swatch{width:14px;height:10px;border-radius:3px}
+
+.hm-toggle{display:flex;gap:6px;margin-bottom:8px;justify-content:center}
+.hm-toggle-btn{padding:3px 10px;border-radius:10px;font-size:.7rem;font-weight:700;font-family:inherit;border:2px solid #333;background:var(--card);cursor:pointer;color:var(--text-light);transition:all .2s}
+.hm-toggle-btn.active{border-color:var(--primary);background:rgba(255,46,234,.12);color:var(--primary);box-shadow:var(--glow-pink)}
+
+.btn-row{display:flex;gap:10px;margin-top:20px;width:100%}
+
+.improvement-section{margin-top:14px;text-align:left;width:100%}
+.improvement-title{font-family:'Bangers',cursive;font-size:.95rem;color:var(--secondary);margin-bottom:8px;letter-spacing:1px;text-shadow:var(--glow-cyan)}
+.improvement-item{background:rgba(0,245,212,.06);border:1px solid rgba(0,245,212,.2);border-radius:12px;padding:10px 12px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.85rem}
+.improvement-item .imp-label{color:var(--text)}
+.improvement-item .imp-change{color:var(--correct);font-size:.8rem;text-align:right}
+.improvement-item .imp-arrow{font-size:.75rem;color:var(--correct);margin:0 4px}
+
+.weakness-section{margin-top:18px;width:100%;text-align:left}
+.weakness-title{font-size:.85rem;font-weight:700;color:var(--text-light);margin-bottom:8px}
+.weakness-card{background:rgba(255,255,255,.03);border-radius:14px;padding:12px 14px;margin:6px 0;display:flex;align-items:flex-start;gap:10px;border:1px solid #333}
+.weakness-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.weakness-body{flex:1}
+.weakness-name{font-size:.9rem;font-weight:900;color:var(--text);margin-bottom:2px}
+.weakness-detail{font-size:.75rem;color:var(--text-light);line-height:1.4}
+.weakness-bar-bg{height:6px;background:#2a2a3e;border-radius:3px;margin-top:4px;overflow:hidden}
+.weakness-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.no-weakness{font-size:.85rem;color:var(--correct);font-weight:700;text-align:center;padding:12px;text-shadow:var(--glow-cyan)}
+
+.result-btn{flex:1;padding:14px;font-size:1.05rem;font-weight:900;font-family:'Bangers',cursive;border:none;border-radius:16px;cursor:pointer;transition:all .2s;letter-spacing:2px}
+.result-btn:hover{transform:translateY(-2px)}
+.result-btn.retry{background:linear-gradient(135deg,var(--secondary),var(--accent));color:#0a0a1a;box-shadow:0 0 20px rgba(0,245,212,.4)}
+.result-btn.home{background:var(--card);color:var(--text);border:2px solid #333}
+.result-btn.home:hover{border-color:var(--secondary)}
+
+#confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
+
+@keyframes popIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.pop-in{animation:popIn .3s ease}
+.shake{animation:shake .4s ease}
+
+@keyframes glitch{0%,100%{text-shadow:0 0 20px rgba(255,46,234,.5),0 0 40px rgba(0,245,212,.3)}50%{text-shadow:2px 0 20px rgba(0,245,212,.8),-2px 0 20px rgba(255,46,234,.8)}}
+
+@media(max-width:400px){
+  .question-text{font-size:2.8rem}
+  .num-btn{font-size:1.4rem}
+  .title{font-size:1.4rem}
+  .hm-cell{width:18px;height:18px;font-size:.45rem}
+}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="container">
+  <div class="title">加法分解構造の<span>反射トレーニング</span></div>
+
+  <!-- ===== START ===== -->
+  <div id="startScreen" class="screen active">
+
+    <div class="section-label">🎮 モード</div>
+    <div class="mode-row">
+      <button class="mode-btn selected" onclick="selectMode('adaptive',this)"><span class="mode-icon">🧠</span>アダプティブ</button>
+      <button class="mode-btn" onclick="selectMode('focus',this)"><span class="mode-icon">🎯</span>和を指定</button>
+    </div>
+
+    <div class="c-selector" id="cSelector" style="display:none">
+      <div class="section-label">🔢 練習する c（a + b = c）</div>
+      <div class="c-grid" id="cGrid"></div>
+      <div class="c-combos" id="cCombos"></div>
+    </div>
+
+    <div class="section-label">🔢 問題数</div>
+    <div class="question-count-row">
+      <button class="count-btn" data-count="10" onclick="selectCount(this)">10</button>
+      <button class="count-btn selected" data-count="20" onclick="selectCount(this)">20</button>
+      <button class="count-btn" data-count="30" onclick="selectCount(this)">30</button>
+      <button class="count-btn" data-count="50" onclick="selectCount(this)">50</button>
+    </div>
+
+    <div class="section-label">⏱️ 制限時間（1問あたり）</div>
+    <div class="target-row">
+      <button class="target-btn" data-target="1000" onclick="selectTarget(this)"><span class="target-time">1s</span>達人</button>
+      <button class="target-btn selected" data-target="2000" onclick="selectTarget(this)"><span class="target-time">2s</span>速い</button>
+      <button class="target-btn" data-target="3000" onclick="selectTarget(this)"><span class="target-time">3s</span>普通</button>
+      <button class="target-btn" data-target="5000" onclick="selectTarget(this)"><span class="target-time">5s</span>ゆっくり</button>
+      <button class="target-btn" data-target="10000" onclick="selectTarget(this)"><span class="target-time">10s</span>じっくり</button>
+    </div>
+
+    <div class="section-label">🎤 音声入力</div>
+    <div class="voice-toggle-row">
+      <button class="voice-toggle-btn" id="voiceToggleBtn" onclick="toggleVoice()">
+        <span class="voice-toggle-icon" id="voiceToggleIcon">🔇</span>
+        <span class="voice-toggle-text" id="voiceToggleText">OFF</span>
+      </button>
+      <span class="voice-toggle-desc" id="voiceToggleDesc">タップでONにすると声でも答えられるよ</span>
+    </div>
+
+    <div id="statsPreview" style="display:none;width:100%">
+      <div class="section-label">📊 記録</div>
+      <div class="preview-stats">
+        <div class="preview-stat"><div class="ps-label">総問題数</div><div class="ps-value" id="prevTotal">0</div></div>
+        <div class="preview-stat"><div class="ps-label">平均</div><div class="ps-value" id="prevAvg">-</div></div>
+        <div class="preview-stat"><div class="ps-label">苦手</div><div class="ps-value" style="color:var(--wrong)" id="prevWeak">0</div></div>
+        <div class="preview-stat"><div class="ps-label">マスター</div><div class="ps-value" style="color:var(--correct)" id="prevMaster">0</div></div>
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startGame()">スタート！</button>
+
+    <div class="nav-row" id="navRow" style="display:none">
+      <button class="nav-btn" onclick="showAssessment()"><span class="nav-icon">📊</span>能力評価</button>
+    </div>
+
+    <button class="reset-link" onclick="resetData()">記録をリセット</button>
+  </div>
+
+  <!-- ===== ASSESSMENT ===== -->
+  <div id="assessScreen" class="screen">
+    <div class="assess-card">
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:2rem">📊</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--text)">能力評価</div>
+      </div>
+
+      <div class="result-stats" id="asCumulativeStats" style="margin-bottom:16px">
+        <div class="result-stat"><div class="rs-label">総回答数</div><div class="rs-value" id="asTotalAttempts">0</div></div>
+        <div class="result-stat"><div class="rs-label">正解率</div><div class="rs-value highlight" id="asTotalRate">0%</div></div>
+        <div class="result-stat"><div class="rs-label">反応中央値</div><div class="rs-value" id="asTotalMedian">-</div></div>
+        <div class="result-stat"><div class="rs-label">経験済み</div><div class="rs-value" id="asTotalSeen">0/45</div></div>
+      </div>
+
+      <div class="mastery-overview">
+        <div class="mastery-box good"><div class="mb-value" id="asMaster">0</div><div class="mb-label">マスター</div></div>
+        <div class="mastery-box mid"><div class="mb-value" id="asPractice">0</div><div class="mb-label">練習中</div></div>
+        <div class="mastery-box bad"><div class="mb-value" id="asWeak">0</div><div class="mb-label">苦手</div></div>
+      </div>
+
+      <div class="mastery-bar-container" id="asMasteryBar"></div>
+      <div class="mastery-bar-legend">
+        <span><div class="dot" style="background:var(--correct)"></div>マスター</span>
+        <span><div class="dot" style="background:var(--ok)"></div>練習中</span>
+        <span><div class="dot" style="background:var(--wrong)"></div>苦手</span>
+        <span><div class="dot" style="background:#2a2a3e"></div>未経験</span>
+      </div>
+
+      <div class="assess-section-title">⚡ 形式別 反応時間</div>
+      <div class="type-breakdown" id="asTypeBreakdown"></div>
+
+      <div class="assess-section-title">📊 反応時間の分布（累積）</div>
+      <div class="bimodal-chart" id="bimodalChart"></div>
+      <div class="bimodal-info" id="bimodalInfo"></div>
+
+      <div class="assess-section-title">🔍 苦手パターン</div>
+      <div id="asWeaknessList"></div>
+
+      <div class="assess-section-title">🗺️ 評価マップ（a, b 組み合わせ別）</div>
+      <div class="heatmap-subtitle" style="text-align:center">全6形式の中央値を集約</div>
+      <div class="hm-toggle">
+        <button class="hm-toggle-btn active" id="asHmTimeBtn" onclick="setAssessHeatMode('time',this)">時間</button>
+        <button class="hm-toggle-btn" id="asHmAccBtn" onclick="setAssessHeatMode('accuracy',this)">正解率</button>
+        <button class="hm-toggle-btn" id="asHmIdxBtn" onclick="setAssessHeatMode('index',this)">苦手指数</button>
+      </div>
+      <div id="asHeatmapContainer"></div>
+      <div class="legend" id="asHeatmapLegend"></div>
+    </div>
+
+    <button class="back-btn" onclick="goHome()">← 戻る</button>
+  </div>
+
+  <!-- ===== GAME ===== -->
+  <div id="gameScreen" class="screen">
+    <div class="top-bar">
+      <div class="stat-box"><div class="stat-label">スコア</div><div class="stat-value" id="scoreDisplay">0</div></div>
+      <div class="stat-box"><div class="stat-label">タイム</div><div class="stat-value timer" id="timerDisplay">0.0</div></div>
+      <div class="stat-box"><div class="stat-label">正解</div><div class="stat-value" id="correctDisplay">0/0</div></div>
+    </div>
+    <div class="progress-bar-container"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="question-card" id="questionCard">
+      <div id="qBadge"></div>
+      <div class="question-number" id="questionNumber">1 / 20</div>
+      <div class="question-text" id="questionText"></div>
+      <div class="countdown-bar-container"><div class="countdown-bar-fill" id="countdownBar"></div></div>
+      <div class="speed-indicator" id="speedIndicator">
+        <div class="speed-dot" id="speedDot"></div>
+        <span class="speed-label" id="speedLabel"></span>
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="next-btn" id="nextBtn" style="display:none" onclick="confirmNext()">次の問題へ →</button>
+    </div>
+    <div class="voice-status" id="voiceStatus" style="display:none">
+      <span class="voice-pulse" id="voicePulse"></span>
+      <span class="voice-status-text" id="voiceStatusText">🎤 聞いてるよ…</span>
+    </div>
+    <div class="numpad" id="numpad"></div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div id="resultScreen" class="screen">
+    <div class="result-card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="result-message" id="resultMessage">すごい！</div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="rs-label">正解数</div><div class="rs-value" id="resCorrect">0</div></div>
+        <div class="result-stat"><div class="rs-label">正解率</div><div class="rs-value highlight" id="resRate">0%</div></div>
+        <div class="result-stat"><div class="rs-label">合計タイム</div><div class="rs-value" id="resTime">0s</div></div>
+        <div class="result-stat"><div class="rs-label">平均反応</div><div class="rs-value" id="resAvg">0s</div></div>
+      </div>
+
+      <div class="speed-summary">
+        <div class="ss-title">⚡ 反応時間 分布（今回）</div>
+        <div class="speed-bars" id="speedBars"></div>
+        <div class="speed-bar-labels" id="speedBarLabels"></div>
+      </div>
+
+      <div class="improvement-section" id="improvementSection" style="display:none">
+        <div class="improvement-title">📈 今回の改善</div>
+        <div id="improvementList"></div>
+      </div>
+
+      <div class="mistakes-section" id="mistakesSection" style="display:none">
+        <div class="mistakes-title">間違い & 遅かった問題</div>
+        <div id="mistakesList"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="result-btn home" onclick="goHome()">戻る</button>
+        <button class="result-btn retry" onclick="startGame()">もう一度！</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const STORAGE_KEY = 'keisan_master_v2';
+const Q_TYPES = [
+  { id:'add',     fmt:(a,b,c)=>[a,'+',b,'=','?'],  ans:(a,b,c)=>c },
+  { id:'add_b',   fmt:(a,b,c)=>[a,'+','?','=',c],  ans:(a,b,c)=>b },
+  { id:'add_a',   fmt:(a,b,c)=>['?','+',b,'=',c],  ans:(a,b,c)=>a },
+  { id:'sub',     fmt:(a,b,c)=>[c,'-',a,'=','?'],   ans:(a,b,c)=>b },
+  { id:'sub_rev', fmt:(a,b,c)=>[c,'-','?','=',a],   ans:(a,b,c)=>b },
+  { id:'sub_top', fmt:(a,b,c)=>['?','-',b,'=',a],   ans:(a,b,c)=>c },
+];
+
+let targetMs = 2000;
+let totalQuestions = 20;
+let gameMode = 'adaptive'; // 'adaptive' or 'focus'
+let focusC = null;
+
+// ===== PERSISTENCE =====
+function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+function save(h) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); } catch {} }
+
+// Key: "add_3_7_add" (base triple + question type)
+function ck(a,b,typeId) { return `${a}_${b}_${typeId}`; }
+function gs(h,k) { return h[k] || { correct:0, wrong:0, times:[], attempts:0 }; }
+
+function medianTime(times) {
+  if (!times.length) return Infinity;
+  const s = [...times].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+
+// ===== BIMODAL WEAKNESS INDEX =====
+// Global layer: compute baseline B and threshold θ from all 45 triples
+function computeGlobalThreshold(h) {
+  const reps = []; // representative median for each of 45 triples
+  for (let a = 1; a <= 9; a++) {
+    for (let b = 1; b <= a; b++) {
+      let allTimes = [];
+      const pairs = (a === b) ? [[a,b]] : [[a,b],[b,a]];
+      pairs.forEach(([x,y]) => {
+        Q_TYPES.forEach(qt => {
+          const s = gs(h, ck(x, y, qt.id));
+          if (s.times.length > 0) allTimes.push(...s.times);
+        });
+      });
+      if (allTimes.length > 0) reps.push(medianTime(allTimes));
+    }
+  }
+  // Fallback: not enough data
+  if (reps.length < 10) {
+    const B = targetMs * 0.4;
+    return { B, theta: B * 2, reps, fallback: true };
+  }
+  reps.sort((a, b) => a - b);
+  // Find largest gap
+  let maxGap = 0, splitIdx = 0;
+  for (let i = 0; i < reps.length - 1; i++) {
+    const gap = reps[i + 1] - reps[i];
+    if (gap > maxGap) { maxGap = gap; splitIdx = i; }
+  }
+  const theta = (reps[splitIdx] + reps[splitIdx + 1]) / 2;
+  // B = median of the fast cluster (everything ≤ split point)
+  const fastCluster = reps.slice(0, splitIdx + 1);
+  const B = medianTime(fastCluster);
+  return { B, theta, reps, fallback: false };
+}
+
+// Local layer: weakness index for a single (a,b) triple (a≥b), 0-10
+function tripleWeaknessIndex(a, b, h, B, theta) {
+  let allTimes = [];
+  let n = 0;
+  const pairs = (a === b) ? [[a,b]] : [[a,b],[b,a]];
+  pairs.forEach(([x,y]) => {
+    Q_TYPES.forEach(qt => {
+      const s = gs(h, ck(x, y, qt.id));
+      if (s.times.length > 0) { allTimes.push(...s.times); n += s.times.length; }
+    });
+  });
+  if (n === 0) return 5.0; // unexperienced → middle
+  const m = medianTime(allTimes);
+  const C = Math.min(n / 10, 1);
+  const D_max = theta * 2;
+  const denom = D_max - B;
+  const raw = denom > 0 ? Math.max(0, Math.min((m - B) / denom, 1)) : 0;
+  return raw * C * 10 + (1 - C) * 5;
+}
+
+// Per-question weakness (for adaptive weighting): use the parent triple's index
+function weakness(s, tgt, a, b, globalCache) {
+  if (!globalCache) {
+    // legacy fallback
+    if (s.attempts === 0) return 5;
+    const med = medianTime(s.times);
+    return Math.min(10, Math.max(0, (med / tgt - 0.3) * 5));
+  }
+  const aa = Math.max(a, b), bb = Math.min(a, b);
+  const key = `${aa}_${bb}`;
+  if (globalCache.indexMap[key] !== undefined) return globalCache.indexMap[key];
+  const idx = tripleWeaknessIndex(aa, bb, globalCache.h, globalCache.B, globalCache.theta);
+  globalCache.indexMap[key] = idx;
+  return idx;
+}
+
+// Classification based on weakness index
+function classifyTriple(idx, n) {
+  if (n === 0) return 'unseen';
+  if (idx <= 2) return 'mastered';
+  if (idx >= 6) return 'weak';
+  return 'practice';
+}
+
+// Helper: count data points for a triple
+function tripleDataCount(a, b, h) {
+  let n = 0;
+  const pairs = (a === b) ? [[a,b]] : [[a,b],[b,a]];
+  pairs.forEach(([x,y]) => {
+    Q_TYPES.forEach(qt => {
+      const s = gs(h, ck(x, y, qt.id));
+      n += s.times.length;
+    });
+  });
+  return n;
+}
+
+// ===== ALL COMBOS =====
+function allTriples() {
+  const t = [];
+  for (let a=1;a<=9;a++) for (let b=1;b<=9;b++) t.push({a,b,c:a+b});
+  return t;
+}
+function allQuestions() {
+  const qs = [];
+  allTriples().forEach(({a,b,c}) => {
+    Q_TYPES.forEach(qt => {
+      qs.push({ a, b, c, type: qt, answer: qt.ans(a,b,c), key: ck(a,b,qt.id) });
+    });
+  });
+  return qs;
+}
+
+function pickQuestion(history, recentKeys) {
+  let qs = allQuestions();
+  if (gameMode === 'focus' && focusC !== null) {
+    qs = qs.filter(q => q.c === focusC);
+  }
+  if (qs.length === 0) qs = allQuestions();
+  const g = computeGlobalThreshold(history);
+  const cache = { h: history, B: g.B, theta: g.theta, indexMap: {} };
+  const weighted = qs.map(q => {
+    let w = weakness(null, targetMs, q.a, q.b, cache);
+    if (recentKeys.includes(q.key)) w *= 0.05;
+    return { q, weight: Math.max(w, 0.05) };
+  });
+  const total = weighted.reduce((s,w) => s+w.weight, 0);
+  let r = Math.random() * total;
+  for (const item of weighted) { r -= item.weight; if (r <= 0) return item.q; }
+  return weighted[weighted.length-1].q;
+}
+
+// ===== GAME STATE =====
+let currentQ=0, correctCount=0, sessionLog=[], startTime=0, qStartTime=0;
+let timerInterval=null, canAnswer=true, curQ=null, history={}, recentKeys=[];
+let sessionTimes = [];
+let deadlineTimer = null;
+let countdownRAF = null;
+let preSessionSnapshot = {}; // snapshot of weakness indices before session
+
+function selectCount(el) {
+  document.querySelectorAll('.count-btn').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); totalQuestions=parseInt(el.dataset.count);
+}
+function selectTarget(el) {
+  document.querySelectorAll('.target-btn').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); targetMs=parseInt(el.dataset.target);
+}
+
+function selectMode(mode, btn) {
+  gameMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const cSel = document.getElementById('cSelector');
+  if (mode === 'focus') {
+    cSel.style.display = 'block';
+    buildCGrid();
+  } else {
+    cSel.style.display = 'none';
+    focusC = null;
+  }
+}
+
+function buildCGrid() {
+  const grid = document.getElementById('cGrid');
+  grid.innerHTML = '';
+  for (let c = 2; c <= 18; c++) {
+    const btn = document.createElement('button');
+    btn.className = 'c-btn' + (focusC === c ? ' selected' : '');
+    btn.textContent = c;
+    btn.onclick = () => selectFocusC(c);
+    grid.appendChild(btn);
+  }
+  updateCCombos();
+}
+
+function selectFocusC(c) {
+  focusC = c;
+  document.querySelectorAll('.c-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.textContent) === c);
+  });
+  updateCCombos();
+}
+
+function updateCCombos() {
+  const el = document.getElementById('cCombos');
+  if (!focusC) { el.textContent = '数字を選んでね'; return; }
+  const pairs = [];
+  for (let a = 1; a <= 9; a++) {
+    const b = focusC - a;
+    if (b >= 1 && b <= 9) pairs.push(`${a}+${b}`);
+  }
+  el.textContent = `c=${focusC}: ${pairs.join('、 ')}（${pairs.length}組 × 6形式）`;
+}
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function goHome() { clearInterval(timerInterval); stopCountdown(); updatePreview(); showScreen('startScreen'); }
+function resetData() { if(confirm('記録を全部消しますか？')){ localStorage.removeItem(STORAGE_KEY); history={}; updatePreview(); } }
+
+function updatePreview() {
+  history = load();
+  const keys = Object.keys(history);
+  const hasData = keys.length > 0;
+  document.getElementById('statsPreview').style.display = hasData ? 'block' : 'none';
+  document.getElementById('navRow').style.display = hasData ? 'flex' : 'none';
+  if (!hasData) return;
+  let tot=0,cor=0,allTimes=[];
+  keys.forEach(k => { const s=history[k]; tot+=s.attempts; cor+=s.correct; allTimes.push(...s.times); });
+  const g = computeGlobalThreshold(history);
+  let weak=0, master=0;
+  for (let a=1;a<=9;a++) for (let b=1;b<=a;b++) {
+    const n = tripleDataCount(a,b,history);
+    const idx = tripleWeaknessIndex(a,b,history,g.B,g.theta);
+    const cls = classifyTriple(idx, n);
+    if (cls==='mastered') master++;
+    if (cls==='weak') weak++;
+  }
+  document.getElementById('prevTotal').textContent = tot;
+  document.getElementById('prevAvg').textContent = allTimes.length ? (medianTime(allTimes)/1000).toFixed(1)+'s' : '-';
+  document.getElementById('prevWeak').textContent = weak;
+  document.getElementById('prevMaster').textContent = master;
+}
+
+// ===== ASSESSMENT SCREEN =====
+let assessHeatMode = 'time';
+let assessHeatType = 'add';
+
+function showAssessment() {
+  history = load();
+  renderAssessCumulativeStats();
+  renderAssessOverview();
+  renderAssessTypeBreakdown();
+  renderBimodalHistogram();
+  renderAssessWeaknesses();
+  renderAssessHeatmapUI();
+  showScreen('assessScreen');
+}
+
+function renderAssessCumulativeStats() {
+  const keys = Object.keys(history);
+  let tot=0, cor=0, allTimes=[];
+  keys.forEach(k => { const s=history[k]; tot+=s.attempts; cor+=s.correct; allTimes.push(...s.times); });
+  const rate = tot > 0 ? Math.round(cor/tot*100) : 0;
+  let seen = 0;
+  for (let a=1;a<=9;a++) for (let b=1;b<=a;b++) { if (tripleDataCount(a,b,history) > 0) seen++; }
+  document.getElementById('asTotalAttempts').textContent = tot;
+  document.getElementById('asTotalRate').textContent = `${rate}%`;
+  document.getElementById('asTotalMedian').textContent = allTimes.length ? (medianTime(allTimes)/1000).toFixed(1)+'s' : '-';
+  document.getElementById('asTotalSeen').textContent = `${seen}/45`;
+}
+
+function renderBimodalHistogram() {
+  const container = document.getElementById('bimodalChart');
+  const info = document.getElementById('bimodalInfo');
+  const g = computeGlobalThreshold(history);
+
+  // Collect ALL raw answer times
+  const allTimes = [];
+  Object.values(history).forEach(s => { if (s.times) allTimes.push(...s.times); });
+
+  if (allTimes.length < 10) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-light);font-size:.85rem;padding:12px">まだデータが少ないです（' + allTimes.length + '回）</div>';
+    info.innerHTML = '';
+    return;
+  }
+
+  // Build histogram bins (500ms = 0.5s, matching result screen)
+  const binSize = 500; // ms
+  const maxVal = Math.max(...allTimes);
+  const numBins = Math.min(Math.ceil(maxVal / binSize) + 1, 20);
+  const bins = new Array(numBins).fill(0);
+  allTimes.forEach(v => {
+    const idx = Math.min(Math.floor(v / binSize), numBins - 1);
+    bins[idx]++;
+  });
+  const maxCount = Math.max(...bins, 1);
+
+  let html = '<div class="bimodal-chart-wrapper"><div class="bimodal-bars">';
+  bins.forEach((count, i) => {
+    const h = count > 0 ? Math.max(count / maxCount * 100, 4) : 0;
+    const midMs = (i + 0.5) * binSize;
+    const cls = midMs <= g.theta ? 'fast' : 'slow';
+    html += `<div class="bimodal-bar ${cls}" style="height:${h}%" title="${(i*binSize/1000).toFixed(1)}〜${((i+1)*binSize/1000).toFixed(1)}s: ${count}回"></div>`;
+  });
+  html += '</div>';
+
+  // θ line
+  const thetaPct = Math.min(g.theta / binSize / numBins * 100, 98);
+  html += `<div class="bimodal-theta-line" style="left:calc(${thetaPct}% + 4px)"><div class="bimodal-theta-label">θ ${(g.theta/1000).toFixed(2)}s</div></div>`;
+
+  // B line
+  const bPct = Math.min(g.B / binSize / numBins * 100, 98);
+  html += `<div class="bimodal-b-line" style="left:calc(${bPct}% + 4px)"><div class="bimodal-b-label">B ${(g.B/1000).toFixed(2)}s</div></div>`;
+
+  // X-axis labels
+  html += '<div class="bimodal-labels">';
+  for (let i = 0; i < numBins; i++) {
+    const label = (i * binSize / 1000).toFixed(1);
+    html += `<span>${i % 2 === 0 ? label : ''}</span>`;
+  }
+  html += '</div></div>';
+
+  container.innerHTML = html;
+
+  // Info text
+  const fastCount = allTimes.filter(v => v <= g.theta).length;
+  const slowCount = allTimes.length - fastCount;
+  info.innerHTML = g.fallback
+    ? 'データ不足のため仮のベースラインを使用中'
+    : `<span style="color:var(--secondary)">B（反射基準）</span> = ${(g.B/1000).toFixed(2)}s　` +
+      `<span style="color:var(--primary)">θ（谷）</span> = ${(g.theta/1000).toFixed(2)}s<br>` +
+      `反射: <span>${fastCount}回</span>　思考: <span>${slowCount}回</span>　（計${allTimes.length}回）`;
+}
+
+function renderAssessOverview() {
+  const g = computeGlobalThreshold(history);
+  let master=0, practice=0, weak=0, unseen=0;
+  for (let a=1;a<=9;a++) for (let b=1;b<=a;b++) {
+    const n = tripleDataCount(a,b,history);
+    const idx = tripleWeaknessIndex(a,b,history,g.B,g.theta);
+    const cls = classifyTriple(idx, n);
+    if (cls==='mastered') master++;
+    else if (cls==='weak') weak++;
+    else if (cls==='unseen') unseen++;
+    else practice++;
+  }
+  const total = 45;
+  document.getElementById('asMaster').textContent=master;
+  document.getElementById('asPractice').textContent=practice;
+  document.getElementById('asWeak').textContent=weak;
+
+  const bar=document.getElementById('asMasteryBar'); bar.innerHTML='';
+  [{n:master,c:'var(--correct)'},{n:practice,c:'var(--ok)'},{n:weak,c:'var(--wrong)'},{n:unseen,c:'#2a2a3e'}].forEach(seg=>{
+    if(seg.n>0){const d=document.createElement('div');d.className='mastery-bar-seg';d.style.width=`${seg.n/total*100}%`;d.style.background=seg.c;bar.appendChild(d);}
+  });
+}
+
+function renderAssessTypeBreakdown() {
+  const container=document.getElementById('asTypeBreakdown'); container.innerHTML='';
+  const typeLabels={add:'a+b=?',add_b:'a+?=c',add_a:'?+b=c',sub:'c-a=?',sub_rev:'c-?=a',sub_top:'?-b=a'};
+  const triples=allTriples();
+  let globalTimes=[];
+  Object.values(history).forEach(s=>{ if(s.times) globalTimes.push(...s.times); });
+  const globalMed = globalTimes.length ? medianTime(globalTimes) : 2000;
+  const maxTime = Math.max(globalMed * 2, targetMs * 2);
+
+  Q_TYPES.forEach(qt=>{
+    const times=[];
+    triples.forEach(({a,b})=>{const s=gs(history,ck(a,b,qt.id)); if(s.times) times.push(...s.times);});
+    const med = times.length ? medianTime(times) : null;
+
+    const row=document.createElement('div'); row.className='type-row';
+    const color = med===null ? '#2a2a3e' : med<=targetMs ? 'var(--correct)' : med<=targetMs*1.5 ? 'var(--ok)' : med<=targetMs*2.5 ? 'var(--slow)' : 'var(--wrong)';
+    const pct = med===null ? 0 : Math.min(med/maxTime*100,100);
+    row.innerHTML=`<div class="type-name">${typeLabels[qt.id]}</div>
+      <div class="type-bar-bg"><div class="type-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="type-time" style="color:${color}">${med===null?'—':(med/1000).toFixed(1)+'s'}</div>`;
+    container.appendChild(row);
+  });
+}
+
+function renderAssessWeaknesses() {
+  // Reuse the analyzeWeaknesses logic but target the assess screen element
+  const list=document.getElementById('asWeaknessList'); list.innerHTML='';
+  const findings=[];
+  const triples=allTriples(); const tgt=targetMs;
+
+  function aggregate(keys){
+    let allTimes=[],totalAttempts=0,totalWrong=0;
+    keys.forEach(k=>{const s=gs(history,k);if(s.attempts>0){allTimes.push(...s.times);totalAttempts+=s.attempts;totalWrong+=s.wrong;}});
+    if(totalAttempts===0)return null;
+    return{med:medianTime(allTimes),errRate:totalWrong/totalAttempts,n:totalAttempts};
+  }
+  const allKeys=[];
+  triples.forEach(({a,b})=>Q_TYPES.forEach(qt=>allKeys.push(ck(a,b,qt.id))));
+  const baseline=aggregate(allKeys);
+  if(!baseline||baseline.n<10){list.innerHTML='<div class="no-weakness">まだ データが すくないよ。もっと れんしゅうしよう！</div>';return;}
+
+  const carryKeys=[],noCarryKeys=[];
+  triples.forEach(({a,b})=>{const t=a+b>=10?carryKeys:noCarryKeys;Q_TYPES.forEach(qt=>t.push(ck(a,b,qt.id)));});
+  const carry=aggregate(carryKeys),noCarry=aggregate(noCarryKeys);
+  if(carry&&noCarry&&carry.med>noCarry.med*1.3&&carry.med>tgt) findings.push({icon:'🔟',name:'繰り上がりが苦手',detail:`繰り上がり ${(carry.med/1000).toFixed(1)}s ← なし ${(noCarry.med/1000).toFixed(1)}s`,severity:carry.med/noCarry.med});
+
+  const typeLabels={add:'a+b=?',add_b:'a+?=c',add_a:'?+b=c',sub:'c-a=?',sub_rev:'c-?=a',sub_top:'?-b=a'};
+  const typeNames={add:'足し算',add_b:'bの穴埋め',add_a:'aの穴埋め',sub:'引き算',sub_rev:'逆引き算',sub_top:'cを当てる'};
+  Q_TYPES.forEach(qt=>{const keys=[];triples.forEach(({a,b})=>keys.push(ck(a,b,qt.id)));const agg=aggregate(keys);if(agg&&agg.med>baseline.med*1.4&&agg.med>tgt)findings.push({icon:'📝',name:`「${typeLabels[qt.id]}」が苦手`,detail:`${typeNames[qt.id]} ${(agg.med/1000).toFixed(1)}s（全体 ${(baseline.med/1000).toFixed(1)}s）`,severity:agg.med/baseline.med});});
+
+  for(let n=1;n<=9;n++){const keys=[];triples.forEach(({a,b})=>{if(a===n||b===n)Q_TYPES.forEach(qt=>keys.push(ck(a,b,qt.id)));});const agg=aggregate(keys);if(agg&&agg.med>baseline.med*1.35&&agg.med>tgt)findings.push({icon:'🔢',name:`${n} が絡む問題が苦手`,detail:`${(agg.med/1000).toFixed(1)}s（全体 ${(baseline.med/1000).toFixed(1)}s）`,severity:agg.med/baseline.med});}
+
+  for(let c=2;c<=18;c++){const keys=[];triples.forEach(({a,b})=>{if(a+b===c)Q_TYPES.forEach(qt=>keys.push(ck(a,b,qt.id)));});const agg=aggregate(keys);if(agg&&agg.med>baseline.med*1.4&&agg.med>tgt&&agg.n>=3)findings.push({icon:'🎯',name:`こたえが ${c} の問題が苦手`,detail:`c=${c}: ${(agg.med/1000).toFixed(1)}s（全体 ${(baseline.med/1000).toFixed(1)}s）`,severity:agg.med/baseline.med});}
+
+  const addKeys=[],subKeys=[];
+  triples.forEach(({a,b})=>{Q_TYPES.forEach(qt=>{if(qt.id==='add'||qt.id==='add_a'||qt.id==='add_b')addKeys.push(ck(a,b,qt.id));else subKeys.push(ck(a,b,qt.id));});});
+  const addAgg=aggregate(addKeys),subAgg=aggregate(subKeys);
+  if(addAgg&&subAgg){if(subAgg.med>addAgg.med*1.3&&subAgg.med>tgt)findings.push({icon:'➖',name:'引き算系 が苦手',detail:`引き算系 ${(subAgg.med/1000).toFixed(1)}s ← 足し算系 ${(addAgg.med/1000).toFixed(1)}s`,severity:subAgg.med/addAgg.med});else if(addAgg.med>subAgg.med*1.3&&addAgg.med>tgt)findings.push({icon:'➕',name:'たしざんけい が苦手',detail:`足し算系 ${(addAgg.med/1000).toFixed(1)}s ← 引き算系 ${(subAgg.med/1000).toFixed(1)}s`,severity:addAgg.med/subAgg.med});}
+
+  findings.sort((a,b)=>b.severity-a.severity);
+  const top=findings.slice(0,5);
+  if(!top.length){list.innerHTML='<div class="no-weakness">🌟 とくに めだった にがては みつかりません！</div>';return;}
+  const maxSev=top[0].severity;
+  top.forEach(f=>{const pct=Math.min(f.severity/maxSev*100,100);const color=f.severity>1.8?'var(--wrong)':f.severity>1.4?'var(--slow)':'var(--ok)';const card=document.createElement('div');card.className='weakness-card';card.innerHTML=`<div class="weakness-icon">${f.icon}</div><div class="weakness-body"><div class="weakness-name">${f.name}</div><div class="weakness-detail">${f.detail}</div><div class="weakness-bar-bg"><div class="weakness-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;list.appendChild(card);});
+}
+
+function setAssessHeatMode(mode, btn) {
+  assessHeatMode=mode;
+  document.querySelectorAll('#assessScreen .hm-toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAssessHeatmapGrid();
+  renderAssessLegend();
+}
+
+function renderAssessHeatmapUI() {
+  assessHeatMode='time';
+  document.getElementById('asHmTimeBtn').classList.add('active');
+  document.getElementById('asHmAccBtn').classList.remove('active');
+  renderAssessHeatmapGrid();
+  renderAssessLegend();
+}
+
+function renderAssessHeatmapGrid() {
+  const container=document.getElementById('asHeatmapContainer'); container.innerHTML='';
+  const grid=document.createElement('div'); grid.className='heatmap-grid add';
+  const corner=document.createElement('div'); corner.className='hm-cell hm-header'; corner.textContent='a\\b';
+  grid.appendChild(corner);
+  for(let b=1;b<=9;b++){const h=document.createElement('div');h.className='hm-cell hm-header';h.textContent=b;grid.appendChild(h);}
+  const g = computeGlobalThreshold(history);
+  for(let a=1;a<=9;a++){
+    const rh=document.createElement('div');rh.className='hm-cell hm-header';rh.textContent=a;grid.appendChild(rh);
+    for(let b=1;b<=9;b++){
+      const cell=document.createElement('div');cell.className='hm-cell';
+      if(b > a){
+        cell.classList.add('hm-empty');
+        grid.appendChild(cell);
+        continue;
+      }
+      const c=a+b;
+      const agg=aggregateTriple(a,b);
+      const idx=tripleWeaknessIndex(a,b,history,g.B,g.theta);
+      const n=tripleDataCount(a,b,history);
+      if(assessHeatMode==='index'){
+        cell.textContent=n>0?idx.toFixed(1):'';
+        if(n===0){cell.style.background='#2a2a3e';}
+        else{const ratio=Math.min(idx/10,1);cell.style.background=timeColor(ratio);}
+        cell.title=`${a}+${b}=${c}: 苦手指数${idx.toFixed(1)} (${n}回)`;
+        cell.style.fontSize='.45rem';
+      } else {
+        cell.textContent=c;
+        if(!agg){cell.style.background='#2a2a3e';}
+        else if(assessHeatMode==='time'){const ratio=Math.min(agg.med/10000,1);cell.style.background=timeColor(ratio);cell.title=`${a}+${b}=${c}: 中央値${(agg.med/1000).toFixed(1)}s 正解率${Math.round(agg.acc*100)}% (${agg.n}回)`;}
+        else{cell.style.background=accColor(1-agg.acc);cell.title=`${a}+${b}=${c}: 正解率${Math.round(agg.acc*100)}% 中央値${(agg.med/1000).toFixed(1)}s (${agg.n}回)`;}
+      }
+      grid.appendChild(cell);
+    }
+  }
+  container.appendChild(grid);
+}
+
+function renderAssessLegend() {
+  const legend=document.getElementById('asHeatmapLegend');
+  if(assessHeatMode==='index'){
+    legend.innerHTML='<span>0</span><div class="legend-swatch" style="background:#00f5d4"></div><div class="legend-swatch" style="background:#80faaa"></div><div class="legend-swatch" style="background:#fee440"></div><div class="legend-swatch" style="background:#ff9e70"></div><div class="legend-swatch" style="background:#ff2eea"></div><span>10</span>';
+  } else if(assessHeatMode==='time'){
+    legend.innerHTML='<span>0s</span><div class="legend-swatch" style="background:#00f5d4"></div><div class="legend-swatch" style="background:#80faaa"></div><div class="legend-swatch" style="background:#fee440"></div><div class="legend-swatch" style="background:#ff9e70"></div><div class="legend-swatch" style="background:#ff2eea"></div><span>10s+</span>';
+  } else {
+    legend.innerHTML='<span>100%</span><div class="legend-swatch" style="background:#00f5d4"></div><div class="legend-swatch" style="background:#80faaa"></div><div class="legend-swatch" style="background:#fee440"></div><div class="legend-swatch" style="background:#ff9e70"></div><div class="legend-swatch" style="background:#ff2eea"></div><span>0%</span>';
+  }
+}
+
+// ===== NUMPAD =====
+function buildNumpad() {
+  const pad=document.getElementById('numpad'); pad.innerHTML='';
+  for (let i=1;i<=20;i++) {
+    const btn=document.createElement('button');
+    btn.textContent=i;
+    if (i>=19) {
+      btn.className='num-btn disabled';
+    } else {
+      btn.className='num-btn';
+      btn.onclick=()=>handleAnswer(i);
+    }
+    pad.appendChild(btn);
+  }
+}
+
+// ===== GAME =====
+function startGame() {
+  if (gameMode === 'focus' && focusC === null) {
+    alert('cの数字を選んでね！');
+    return;
+  }
+  history=load(); currentQ=0; correctCount=0; sessionLog=[]; recentKeys=[]; sessionTimes=[];
+  // Snapshot weakness indices before session
+  preSessionSnapshot = {};
+  const g = computeGlobalThreshold(history);
+  for (let a=1;a<=9;a++) for (let b=1;b<=a;b++) {
+    const key = `${a}_${b}`;
+    preSessionSnapshot[key] = tripleWeaknessIndex(a,b,history,g.B,g.theta);
+  }
+  canAnswer=true; buildNumpad(); showScreen('gameScreen'); pickNext();
+  startTime=Date.now(); clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{document.getElementById('timerDisplay').textContent=((Date.now()-startTime)/1000).toFixed(1);},100);
+}
+
+function pickNext() {
+  curQ = pickQuestion(history, recentKeys);
+  recentKeys.push(curQ.key); if(recentKeys.length>8) recentKeys.shift();
+  qStartTime = Date.now();
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = curQ;
+  const parts = q.type.fmt(q.a, q.b, q.c);
+  const el = document.getElementById('questionText');
+  el.innerHTML = parts.map(p => {
+    if (p === '?') return '<span class="q-blank">□</span>';
+    if (p === '+' || p === '-') return `<span class="q-op">${p==='+'?'＋':'－'}</span>`;
+    if (p === '=') return '<span class="q-eq">＝</span>';
+    return `<span class="q-num">${p}</span>`;
+  }).join('');
+
+  document.getElementById('questionNumber').textContent = `${currentQ+1} / ${totalQuestions}`;
+  document.getElementById('progressBar').style.width = `${(currentQ/totalQuestions)*100}%`;
+  document.getElementById('scoreDisplay').textContent = correctCount;
+  document.getElementById('correctDisplay').textContent = `${correctCount}/${currentQ}`;
+
+  // Badge
+  const badge = document.getElementById('qBadge');
+  const s = gs(history, q.key);
+  const g = computeGlobalThreshold(history);
+  const aa = Math.max(q.a, q.b), bb = Math.min(q.a, q.b);
+  const idx = tripleWeaknessIndex(aa, bb, history, g.B, g.theta);
+  const n = tripleDataCount(aa, bb, history);
+  if (n > 0 && idx >= 6) badge.innerHTML='<span class="q-badge weak">🔥 苦手</span>';
+  else if (n > 0 && idx >= 4) badge.innerHTML='<span class="q-badge slow">🐢 遅め</span>';
+  else if (n === 0) badge.innerHTML='<span class="q-badge new">✨ 初回</span>';
+  else badge.innerHTML='';
+
+  // Reset speed indicator
+  document.getElementById('speedDot').style.background = '#2a2a3e';
+  document.getElementById('speedLabel').textContent = '';
+
+  const card=document.getElementById('questionCard');
+  card.classList.remove('pop-in','shake'); void card.offsetWidth; card.classList.add('pop-in');
+  const fb=document.getElementById('feedback'); fb.className='feedback'; fb.textContent='';
+  document.getElementById('nextBtn').style.display='none';
+
+  // Start countdown bar
+  startCountdown();
+}
+
+function revealAnswer(answer, isCorrect) {
+  const blank = document.querySelector('.q-blank');
+  if (blank) {
+    blank.textContent = answer;
+    blank.style.color = isCorrect ? 'var(--correct)' : 'var(--wrong)';
+    blank.style.fontWeight = '900';
+  }
+}
+
+function handleAnswer(n) {
+  if (!canAnswer) return;
+  stopCountdown();
+  const q = curQ, elapsed = Date.now()-qStartTime;
+  const fb = document.getElementById('feedback');
+  const card = document.getElementById('questionCard');
+  const key = q.key;
+  if (!history[key]) history[key]={ correct:0, wrong:0, times:[], attempts:0 };
+  history[key].attempts++;
+
+  // Show speed
+  showSpeed(elapsed);
+
+  // Reveal answer in the equation
+  revealAnswer(q.answer, n === q.answer);
+
+  if (n === q.answer) {
+    history[key].correct++;
+    history[key].times.push(elapsed);
+    // Keep only last 10 times
+    if (history[key].times.length > 10) history[key].times = history[key].times.slice(-10);
+    correctCount++;
+    sessionTimes.push(elapsed);
+    sessionLog.push({ ...q, given:n, elapsed, ok:true });
+    fb.textContent='⭕'; fb.className='feedback correct show';
+    canAnswer=false; save(history); setTimeout(advance, 450);
+  } else {
+    history[key].wrong++;
+    history[key].times.push(elapsed + 2000); // penalty
+    if (history[key].times.length > 10) history[key].times = history[key].times.slice(-10);
+    sessionTimes.push(elapsed);
+    sessionLog.push({ ...q, given:n, elapsed, ok:false });
+    fb.textContent=`✕ あなた: ${n}`; fb.className='feedback wrong show';
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    canAnswer=false; save(history); showNextBtn();
+  }
+}
+
+function startCountdown() {
+  stopCountdown();
+  const bar = document.getElementById('countdownBar');
+  // Reset bar to full
+  bar.style.transition = 'none';
+  bar.style.transform = 'scaleX(1)';
+  bar.className = 'countdown-bar-fill';
+  void bar.offsetWidth; // force reflow
+
+  // Animate shrink over targetMs
+  bar.style.transition = `transform ${targetMs}ms linear`;
+  bar.style.transform = 'scaleX(0)';
+
+  // Color changes at thresholds
+  const warnAt = targetMs * 0.4;
+  const dangerAt = targetMs * 0.2;
+
+  const start = Date.now();
+  function updateColor() {
+    const remaining = targetMs - (Date.now() - start);
+    if (remaining <= 0 || !canAnswer) return;
+    if (remaining <= dangerAt) { bar.className = 'countdown-bar-fill danger'; }
+    else if (remaining <= warnAt) { bar.className = 'countdown-bar-fill warn'; }
+    countdownRAF = requestAnimationFrame(updateColor);
+  }
+  countdownRAF = requestAnimationFrame(updateColor);
+
+  // Set deadline
+  deadlineTimer = setTimeout(handleTimeout, targetMs);
+}
+
+function stopCountdown() {
+  if (deadlineTimer) { clearTimeout(deadlineTimer); deadlineTimer = null; }
+  if (countdownRAF) { cancelAnimationFrame(countdownRAF); countdownRAF = null; }
+  const bar = document.getElementById('countdownBar');
+  if (bar) { bar.style.transition = 'none'; }
+}
+
+function handleTimeout() {
+  if (!canAnswer) return;
+  deadlineTimer = null;
+  const q = curQ, elapsed = targetMs;
+  const fb = document.getElementById('feedback');
+  const card = document.getElementById('questionCard');
+  const key = q.key;
+  if (!history[key]) history[key]={ correct:0, wrong:0, times:[], attempts:0 };
+  history[key].attempts++;
+  history[key].wrong++;
+  history[key].times.push(elapsed + 3000); // bigger penalty for timeout
+  if (history[key].times.length > 10) history[key].times = history[key].times.slice(-10);
+  sessionTimes.push(elapsed);
+  sessionLog.push({ ...q, given: -1, elapsed, ok: false, timeout: true });
+
+  // Reveal answer in the equation
+  revealAnswer(q.answer, false);
+
+  showSpeed(elapsed);
+  fb.textContent='⏰ 時間切れ！'; fb.className='feedback wrong show';
+  card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+  canAnswer=false; save(history); showNextBtn();
+}
+
+function showNextBtn() {
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function confirmNext() {
+  document.getElementById('nextBtn').style.display = 'none';
+  advance();
+}
+
+function showSpeed(ms) {
+  const dot = document.getElementById('speedDot');
+  const label = document.getElementById('speedLabel');
+  const sec = (ms/1000).toFixed(1);
+  if (ms <= targetMs * 0.7) { dot.style.background=var_fast; label.textContent=`${sec}s ⚡`; label.style.color=var_fast; }
+  else if (ms <= targetMs) { dot.style.background=var_ok; label.textContent=`${sec}s 👍`; label.style.color='#E6A700'; }
+  else if (ms <= targetMs * 2) { dot.style.background=var_slow; label.textContent=`${sec}s 🐢`; label.style.color=var_slow; }
+  else { dot.style.background=var_vslow; label.textContent=`${sec}s 💤`; label.style.color=var_vslow; }
+}
+const var_fast='#00f5d4', var_ok='#fee440', var_slow='#ff9e00', var_vslow='#ff2eea';
+
+function advance() { currentQ++; canAnswer=true; if(currentQ>=totalQuestions) endGame(); else pickNext(); }
+
+// ===== END GAME =====
+function endGame() {
+  clearInterval(timerInterval);
+  stopCountdown();
+  const elapsed = (Date.now()-startTime)/1000;
+  const rate = Math.round(correctCount/totalQuestions*100);
+  const avgReaction = sessionTimes.length ? (sessionTimes.reduce((a,b)=>a+b,0)/sessionTimes.length/1000).toFixed(1) : '-';
+
+  document.getElementById('resCorrect').textContent=`${correctCount} / ${totalQuestions}`;
+  document.getElementById('resRate').textContent=`${rate}%`;
+  document.getElementById('resTime').textContent=`${elapsed.toFixed(1)}s`;
+  document.getElementById('resAvg').textContent=`${avgReaction}s`;
+
+  let emoji,msg;
+  if(rate===100 && parseFloat(avgReaction)<=targetMs/1000){ emoji='🏆'; msg='完璧！反射的！'; }
+  else if(rate===100){ emoji='💯'; msg='全問正解！'; }
+  else if(rate>=90){ emoji='🎉'; msg='素晴らしい！'; }
+  else if(rate>=70){ emoji='😊'; msg='よくできました！'; }
+  else if(rate>=50){ emoji='💪'; msg='もう少し！'; }
+  else{ emoji='🌱'; msg='頑張ろう！'; }
+  document.getElementById('resultEmoji').textContent=emoji;
+  document.getElementById('resultMessage').textContent=msg;
+
+  // Speed distribution chart
+  renderSpeedBars();
+
+  // Mistakes & slow
+  const ms=document.getElementById('mistakesSection');
+  const ml=document.getElementById('mistakesList'); ml.innerHTML='';
+  const issues = sessionLog.filter(l => !l.ok || l.elapsed > targetMs * 1.5);
+  if(issues.length) {
+    ms.style.display='block';
+    issues.forEach(m => {
+      const d=document.createElement('div'); d.className='mistake-item';
+      const parts=m.type.fmt(m.a,m.b,m.c).map(p=>p==='?'?'□':p==='+'?'＋':p==='-'?'－':p==='='?'＝':p).join(' ');
+      const sec=(m.elapsed/1000).toFixed(1);
+      d.innerHTML=`<span class="mistake-q">${parts}</span>
+        <span class="mistake-info">${m.timeout?'⏰':''}${m.ok?'⭕':'✕ →'+m.answer} ${sec}s ${!m.timeout&&m.elapsed>targetMs*1.5?'🐢':''}</span>`;
+      ml.appendChild(d);
+    });
+  } else ms.style.display='none';
+
+  // Improvements
+  renderImprovements();
+
+  showScreen('resultScreen');
+  document.getElementById('progressBar').style.width='100%';
+  if(rate>=80) launchConfetti();
+}
+
+function renderImprovements() {
+  const section = document.getElementById('improvementSection');
+  const list = document.getElementById('improvementList');
+  list.innerHTML = '';
+
+  const g = computeGlobalThreshold(history);
+  const improvements = [];
+
+  // Find triples that were touched in this session
+  const touchedTriples = new Set();
+  sessionLog.forEach(l => {
+    const aa = Math.max(l.a, l.b), bb = Math.min(l.a, l.b);
+    touchedTriples.add(`${aa}_${bb}`);
+  });
+
+  touchedTriples.forEach(key => {
+    const [a, b] = key.split('_').map(Number);
+    const before = preSessionSnapshot[key];
+    const after = tripleWeaknessIndex(a, b, history, g.B, g.theta);
+    const delta = before - after;
+    if (delta > 0.3) { // meaningful improvement threshold
+      improvements.push({ a, b, c: a+b, before, after, delta });
+    }
+  });
+
+  if (improvements.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  improvements.sort((a, b) => b.delta - a.delta);
+  improvements.slice(0, 8).forEach(imp => {
+    const d = document.createElement('div');
+    d.className = 'improvement-item';
+    d.innerHTML = `<span class="imp-label">${imp.a}+${imp.b}=${imp.c}</span>
+      <span class="imp-change">${imp.before.toFixed(1)}<span class="imp-arrow">→</span>${imp.after.toFixed(1)}　▼${imp.delta.toFixed(1)}</span>`;
+    list.appendChild(d);
+  });
+}
+
+function renderSpeedBars() {
+  const bins = [0.5,1,1.5,2,2.5,3,4,5,999];
+  const counts = new Array(bins.length).fill(0);
+  sessionTimes.forEach(t => {
+    const sec=t/1000;
+    for(let i=0;i<bins.length;i++){ if(sec<=bins[i]){ counts[i]++; break; } }
+  });
+  const max=Math.max(...counts,1);
+  const colors=[var_fast,var_fast,var_ok,var_ok,var_slow,var_slow,var_vslow,var_vslow,var_vslow];
+  const bars=document.getElementById('speedBars'); bars.innerHTML='';
+  const labels=document.getElementById('speedBarLabels'); labels.innerHTML='';
+  counts.forEach((c,i) => {
+    const bar=document.createElement('div'); bar.className='speed-bar';
+    bar.style.height=`${Math.max(c/max*50,2)}px`; bar.style.background=colors[i]||var_vslow;
+    bars.appendChild(bar);
+    const lbl=document.createElement('span');
+    lbl.textContent=bins[i]<999?bins[i]+'':'5+';
+    labels.appendChild(lbl);
+  });
+}
+
+// ===== SHARED UTILITIES =====
+
+// Aggregate stats across all 6 question types for a given (a,b), merging (a,b) and (b,a)
+function aggregateTriple(a, b) {
+  let allTimes=[], totalAttempts=0, totalCorrect=0;
+  const pairs = (a === b) ? [[a,b]] : [[a,b],[b,a]];
+  pairs.forEach(([x,y]) => {
+    Q_TYPES.forEach(qt => {
+      const s = gs(history, ck(x, y, qt.id));
+      if (s.attempts > 0) {
+        allTimes.push(...s.times);
+        totalAttempts += s.attempts;
+        totalCorrect += s.correct;
+      }
+    });
+  });
+  if (totalAttempts === 0) return null;
+  return { med: medianTime(allTimes), acc: totalCorrect/totalAttempts, n: totalAttempts };
+}
+
+function timeColor(t) {
+  t=Math.max(0,Math.min(1,t));
+  if(t<=0.5){ const r=Math.round(0+(255-0)*t*2),g=Math.round(245-(245-46)*t*2),b=Math.round(212-(212-234)*t*2); return `rgb(${r},${g},${b})`; }
+  const tt=(t-0.5)*2; return `rgb(255,${Math.round(158-158*tt)},${Math.round(0+234*tt)})`;
+}
+function accColor(t) {
+  t=Math.max(0,Math.min(1,t));
+  if(t<=0.5){ const r=Math.round(0+(255-0)*t*2),g=Math.round(245-(245-46)*t*2),b=Math.round(212-(212-234)*t*2); return `rgb(${r},${g},${b})`; }
+  const tt=(t-0.5)*2; return `rgb(255,${Math.round(158-158*tt)},${Math.round(0+234*tt)})`;
+}
+
+// ===== CONFETTI =====
+function launchConfetti() {
+  const canvas=document.getElementById('confetti'),ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const colors=['#ff2eea','#00f5d4','#fee440','#ff9e00','#a855f7','#00d4ff'];
+  const pieces=[];
+  for(let i=0;i<120;i++) pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,w:Math.random()*10+5,h:Math.random()*6+3,color:colors[Math.floor(Math.random()*colors.length)],vy:Math.random()*3+2,vx:(Math.random()-0.5)*2,rot:Math.random()*360,vr:(Math.random()-0.5)*8,opacity:1});
+  let frame=0;
+  (function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);let alive=false;pieces.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;if(frame>60)p.opacity-=0.01;if(p.opacity<=0)return;alive=true;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.globalAlpha=Math.max(0,p.opacity);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore()});frame++;if(alive)requestAnimationFrame(draw);else ctx.clearRect(0,0,canvas.width,canvas.height)})();
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('gameScreen').classList.contains('active'))return;
+  const k=parseInt(e.key); if(!isNaN(k)) handleAnswer(k);
+});
+
+// ===== VOICE RECOGNITION =====
+let voiceEnabled = false;
+let recognition = null;
+let voiceSupported = false;
+
+// Number word mapping (Japanese)
+const NUM_MAP = {
+  'いち':'1','に':'2','さん':'3','し':'4','よん':'4','ご':'5',
+  'ろく':'6','なな':'7','しち':'7','はち':'8','きゅう':'9','く':'9',
+  'じゅう':'10','じゅういち':'11','じゅうに':'12','じゅうさん':'13',
+  'じゅうし':'14','じゅうよん':'14','じゅうご':'15','じゅうろく':'16',
+  'じゅうなな':'17','じゅうしち':'17','じゅうはち':'18',
+  '一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9',
+  '十':'10','十一':'11','十二':'12','十三':'13','十四':'14','十五':'15',
+  '十六':'16','十七':'17','十八':'18',
+  '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
+  '10':'10','11':'11','12':'12','13':'13','14':'14','15':'15',
+  '16':'16','17':'17','18':'18',
+};
+
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voiceToggleDesc').textContent = 'このブラウザは音声未対応です';
+    document.getElementById('voiceToggleBtn').disabled = true;
+    document.getElementById('voiceToggleBtn').style.opacity = '0.4';
+    return;
+  }
+  voiceSupported = true;
+  recognition = new SR();
+  recognition.lang = 'ja-JP';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 5;
+
+  recognition.onresult = (e) => {
+    if (!canAnswer || !document.getElementById('gameScreen').classList.contains('active')) return;
+    // Check all results from the latest
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const result = e.results[i];
+      for (let j = 0; j < result.length; j++) {
+        const text = result[j].transcript.trim().replace(/\s/g, '');
+        const num = parseVoiceNumber(text);
+        if (num !== null) {
+          handleAnswer(num);
+          return;
+        }
+      }
+    }
+  };
+
+  recognition.onend = () => {
+    // Auto-restart if voice is enabled and game is active
+    if (voiceEnabled && document.getElementById('gameScreen').classList.contains('active')) {
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      const status = document.getElementById('voiceStatus');
+      status.className = 'voice-status error';
+      document.getElementById('voiceStatusText').textContent = '🎤 マイクが許可されていません';
+      voiceEnabled = false;
+      updateVoiceToggleUI();
+    }
+    // For other errors (no-speech, aborted), just let onend restart
+  };
+}
+
+function parseVoiceNumber(text) {
+  // Direct match
+  if (NUM_MAP[text] !== undefined) return parseInt(NUM_MAP[text]);
+  // Try extracting numbers from the string
+  for (const [key, val] of Object.entries(NUM_MAP)) {
+    if (text.includes(key)) return parseInt(val);
+  }
+  // Try parsing as raw digit
+  const n = parseInt(text);
+  if (!isNaN(n) && n >= 1 && n <= 18) return n;
+  return null;
+}
+
+function toggleVoice() {
+  if (!voiceSupported) return;
+  voiceEnabled = !voiceEnabled;
+  updateVoiceToggleUI();
+}
+
+function updateVoiceToggleUI() {
+  const btn = document.getElementById('voiceToggleBtn');
+  const icon = document.getElementById('voiceToggleIcon');
+  const text = document.getElementById('voiceToggleText');
+  const desc = document.getElementById('voiceToggleDesc');
+  if (voiceEnabled) {
+    btn.classList.add('active');
+    icon.textContent = '🎤';
+    text.textContent = 'ON';
+    desc.textContent = '声でもボタンでも答えられるよ';
+  } else {
+    btn.classList.remove('active');
+    icon.textContent = '🔇';
+    text.textContent = 'OFF';
+    desc.textContent = 'タップでONにすると声でも答えられるよ';
+  }
+}
+
+function startVoice() {
+  if (!voiceEnabled || !recognition) return;
+  const status = document.getElementById('voiceStatus');
+  status.style.display = 'flex';
+  status.className = 'voice-status';
+  document.getElementById('voiceStatusText').textContent = '🎤 聞いてるよ…';
+  try { recognition.start(); } catch(e) {}
+}
+
+function stopVoice() {
+  if (!recognition) return;
+  document.getElementById('voiceStatus').style.display = 'none';
+  try { recognition.stop(); } catch(e) {}
+}
+
+// Patch startGame to also start voice
+const _origStartGame = startGame;
+startGame = function() {
+  _origStartGame();
+  if (voiceEnabled) startVoice();
+};
+
+// Patch goHome to stop voice
+const _origGoHome = goHome;
+goHome = function() {
+  stopVoice();
+  _origGoHome();
+};
+
+// Patch endGame to stop voice
+const _origEndGame = endGame;
+endGame = function() {
+  stopVoice();
+  _origEndGame();
+};
+
+initVoice();
+updatePreview();
+
+// PWA: Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
