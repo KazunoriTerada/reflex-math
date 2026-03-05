@@ -251,12 +251,14 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 .structure-eq{font-size:.8rem;color:var(--text-light);font-weight:700}
 .structure-pairs{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.6;flex:1;flex-wrap:wrap}
 
-.structure-grid{display:grid;gap:3px;grid-template-columns:repeat(10,1fr)}
-.sg-cell{width:100%;aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:900;cursor:default;transition:all .2s;color:var(--cell-text);background:var(--cell-empty)}
-.sg-cell.sg-active{color:#fff;transform:scale(1.08);box-shadow:0 0 8px rgba(0,0,0,.2)}
-.sg-cell.sg-dim{opacity:.2}
-.sg-header{background:transparent!important;color:var(--text-light);font-weight:900;font-size:.7rem;opacity:1!important}
-.sg-empty{background:transparent!important;opacity:1!important}
+.structure-grid{display:grid;gap:1px;grid-template-columns:repeat(10,1fr);background:var(--border-subtle);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden}
+.sg-cell{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:clamp(.7rem,2.8vw,1rem);font-weight:900;cursor:default;transition:all .15s;color:var(--cell-text);background:var(--card)}
+.sg-cell.sg-filled{cursor:pointer;opacity:.3}
+.sg-cell.sg-active{opacity:1;transform:scale(1.1);box-shadow:0 0 8px rgba(0,0,0,.25);border-radius:4px;z-index:2;position:relative}
+.sg-cell.sg-dim{opacity:.3}
+.sg-header{background:var(--card)!important;color:var(--text-light);font-weight:900;font-size:clamp(.65rem,2.5vw,.9rem);opacity:1!important}
+.sg-header.sg-header-active{color:var(--primary);background:var(--btn-selected-bg)!important}
+.sg-empty{background:var(--card)!important;opacity:1!important}
 
 .sc-picker{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;width:100%;margin-bottom:14px}
 .sc-btn{padding:10px 0;border:2px solid var(--border-subtle);border-radius:12px;font-size:1.1rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text-light);background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:all .2s;text-align:center}
@@ -322,6 +324,7 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
     </div>
 
     <div class="c-selector" id="cSelector" style="display:none">
+      <div class="section-label">🔢 和</div>
       <div class="c-grid" id="cGrid"></div>
     </div>
 
@@ -772,12 +775,14 @@ function buildStructureGrid() {
     const h = document.createElement('div');
     h.className = 'sg-cell sg-header';
     h.textContent = b;
+    h.dataset.col = b;
     grid.appendChild(h);
   }
   for (let a = 1; a <= 9; a++) {
     const rh = document.createElement('div');
     rh.className = 'sg-cell sg-header';
     rh.textContent = a;
+    rh.dataset.row = a;
     grid.appendChild(rh);
     for (let b = 1; b <= 9; b++) {
       const cell = document.createElement('div');
@@ -788,10 +793,12 @@ function buildStructureGrid() {
         const c = a + b;
         cell.textContent = c;
         cell.dataset.c = c;
+        cell.dataset.a = a;
+        cell.dataset.b = b;
+        cell.classList.add('sg-filled');
         cell.style.background = rainbowColor(c);
         cell.style.color = '#fff';
         cell.onclick = () => selectStructureC(c);
-        cell.style.cursor = 'pointer';
       }
       grid.appendChild(cell);
     }
@@ -801,14 +808,20 @@ function buildStructureGrid() {
 
 function updateStructureHighlight() {
   const c = structureSelectedC;
+  // Collect which rows and cols are involved
+  const activeRows = new Set();
+  const activeCols = new Set();
+  if (c !== null) {
+    for (let a = Math.min(c-1, 9); a >= Math.ceil(c/2); a--) {
+      const b = c - a;
+      if (b >= 1 && b <= 9) { activeRows.add(a); activeCols.add(b); }
+    }
+  }
+
   // Update picker buttons
   document.querySelectorAll('.sc-btn').forEach(btn => {
     const bc = parseInt(btn.dataset.c);
-    if (c === null) {
-      btn.classList.remove('sc-selected');
-      btn.style.background = '';
-      btn.style.borderColor = '';
-    } else if (bc === c) {
+    if (c !== null && bc === c) {
       btn.classList.add('sc-selected');
       btn.style.background = rainbowColor(c);
       btn.style.borderColor = rainbowColor(c);
@@ -818,9 +831,22 @@ function updateStructureHighlight() {
       btn.style.borderColor = '';
     }
   });
+
   // Update grid cells
   document.querySelectorAll('.sg-cell').forEach(cell => {
-    if (cell.classList.contains('sg-header') || cell.classList.contains('sg-empty')) return;
+    // Headers
+    if (cell.classList.contains('sg-header')) {
+      const row = cell.dataset.row ? parseInt(cell.dataset.row) : null;
+      const col = cell.dataset.col ? parseInt(cell.dataset.col) : null;
+      if (c !== null && ((row && activeRows.has(row)) || (col && activeCols.has(col)))) {
+        cell.classList.add('sg-header-active');
+      } else {
+        cell.classList.remove('sg-header-active');
+      }
+      return;
+    }
+    if (cell.classList.contains('sg-empty')) return;
+
     const cc = parseInt(cell.dataset.c);
     if (c === null) {
       cell.classList.remove('sg-active', 'sg-dim');
@@ -832,6 +858,7 @@ function updateStructureHighlight() {
       cell.classList.add('sg-dim');
     }
   });
+
   // Update detail
   const detail = document.getElementById('structureDetail');
   if (c === null) {
