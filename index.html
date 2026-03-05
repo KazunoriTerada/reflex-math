@@ -251,6 +251,20 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 .structure-eq{font-size:.8rem;color:var(--text-light);font-weight:700}
 .structure-pairs{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.6;flex:1;flex-wrap:wrap}
 
+.structure-grid{display:grid;gap:3px;grid-template-columns:repeat(10,1fr)}
+.sg-cell{width:100%;aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:900;cursor:default;transition:all .2s;color:var(--cell-text);background:var(--cell-empty)}
+.sg-cell.sg-active{color:#fff;transform:scale(1.08);box-shadow:0 0 8px rgba(0,0,0,.2)}
+.sg-cell.sg-dim{opacity:.2}
+.sg-header{background:transparent!important;color:var(--text-light);font-weight:900;font-size:.7rem;opacity:1!important}
+.sg-empty{background:transparent!important;opacity:1!important}
+
+.sc-picker{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;width:100%;margin-bottom:14px}
+.sc-btn{padding:10px 0;border:2px solid var(--border-subtle);border-radius:12px;font-size:1.1rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text-light);background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:all .2s;text-align:center}
+.sc-btn:hover{transform:translateY(-1px)}
+.sc-btn.sc-selected{color:#fff;box-shadow:0 0 10px rgba(0,0,0,.15)}
+
+.structure-detail{margin-top:14px;text-align:center;min-height:40px}
+
 .improvement-section{margin-top:14px;text-align:left;width:100%}
 .improvement-title{font-family:var(--title-font);font-size:.95rem;font-weight:700;color:var(--correct);margin-bottom:8px;letter-spacing:1px}
 .improvement-item{background:rgba(0,245,212,.06);border:1px solid rgba(0,245,212,.2);border-radius:12px;padding:10px 12px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.85rem}
@@ -308,7 +322,6 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
     </div>
 
     <div class="c-selector" id="cSelector" style="display:none">
-      <div class="section-label">🔢 練習する c（a + b = c）</div>
       <div class="c-grid" id="cGrid"></div>
     </div>
 
@@ -353,11 +366,11 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
   <div id="structureScreen" class="screen">
     <div class="assess-card">
       <div style="text-align:center;margin-bottom:12px">
-        <div style="font-size:2rem">🔍</div>
         <div style="font-size:1.2rem;font-weight:900;color:var(--text)">和の構造</div>
-        <div style="font-size:.75rem;color:var(--text-light);margin-top:4px">c = a + b（a ≥ b）の全組み合わせ</div>
       </div>
-      <div id="structureList"></div>
+      <div class="sc-picker" id="scPicker"></div>
+      <div id="structureGrid"></div>
+      <div class="structure-detail" id="structureDetail"></div>
     </div>
     <button class="back-btn" onclick="goHome()">← 戻る</button>
   </div>
@@ -711,22 +724,126 @@ function selectFocusC(c) {
   });
 }
 
+function rainbowColor(c) {
+  const t = (c - 2) / 16;
+  const hue = 240 - t * 240;
+  return `hsl(${hue}, 70%, 55%)`;
+}
+
+let structureSelectedC = null;
+
 function showStructure() {
-  const list = document.getElementById('structureList');
-  list.innerHTML = '';
-  for (let c = 2; c <= 18; c++) {
-    const pairs = [];
-    for (let a = Math.min(c-1, 9); a >= Math.ceil(c/2); a--) {
-      const b = c - a;
-      if (b >= 1 && b <= 9) pairs.push(`${a}+${b}`);
-    }
-    if (pairs.length === 0) continue;
-    const row = document.createElement('div');
-    row.className = 'structure-row';
-    row.innerHTML = `<span class="structure-c">${c}</span><span class="structure-eq">=</span><span class="structure-pairs">${pairs.join('　')}</span>`;
-    list.appendChild(row);
-  }
+  structureSelectedC = null;
+  buildStructurePicker();
+  buildStructureGrid();
+  updateStructureHighlight();
   showScreen('structureScreen');
+}
+
+function buildStructurePicker() {
+  const picker = document.getElementById('scPicker');
+  picker.innerHTML = '';
+  for (let c = 2; c <= 18; c++) {
+    const btn = document.createElement('button');
+    btn.className = 'sc-btn';
+    btn.textContent = c;
+    btn.dataset.c = c;
+    btn.onclick = () => selectStructureC(c);
+    picker.appendChild(btn);
+  }
+}
+
+function selectStructureC(c) {
+  structureSelectedC = (structureSelectedC === c) ? null : c;
+  updateStructureHighlight();
+}
+
+function buildStructureGrid() {
+  const gridEl = document.getElementById('structureGrid');
+  gridEl.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'structure-grid';
+
+  const corner = document.createElement('div');
+  corner.className = 'sg-cell sg-header';
+  corner.textContent = 'a\\b';
+  grid.appendChild(corner);
+  for (let b = 1; b <= 9; b++) {
+    const h = document.createElement('div');
+    h.className = 'sg-cell sg-header';
+    h.textContent = b;
+    grid.appendChild(h);
+  }
+  for (let a = 1; a <= 9; a++) {
+    const rh = document.createElement('div');
+    rh.className = 'sg-cell sg-header';
+    rh.textContent = a;
+    grid.appendChild(rh);
+    for (let b = 1; b <= 9; b++) {
+      const cell = document.createElement('div');
+      cell.className = 'sg-cell';
+      if (b > a) {
+        cell.classList.add('sg-empty');
+      } else {
+        const c = a + b;
+        cell.textContent = c;
+        cell.dataset.c = c;
+        cell.style.background = rainbowColor(c);
+        cell.style.color = '#fff';
+        cell.onclick = () => selectStructureC(c);
+        cell.style.cursor = 'pointer';
+      }
+      grid.appendChild(cell);
+    }
+  }
+  gridEl.appendChild(grid);
+}
+
+function updateStructureHighlight() {
+  const c = structureSelectedC;
+  // Update picker buttons
+  document.querySelectorAll('.sc-btn').forEach(btn => {
+    const bc = parseInt(btn.dataset.c);
+    if (c === null) {
+      btn.classList.remove('sc-selected');
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    } else if (bc === c) {
+      btn.classList.add('sc-selected');
+      btn.style.background = rainbowColor(c);
+      btn.style.borderColor = rainbowColor(c);
+    } else {
+      btn.classList.remove('sc-selected');
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }
+  });
+  // Update grid cells
+  document.querySelectorAll('.sg-cell').forEach(cell => {
+    if (cell.classList.contains('sg-header') || cell.classList.contains('sg-empty')) return;
+    const cc = parseInt(cell.dataset.c);
+    if (c === null) {
+      cell.classList.remove('sg-active', 'sg-dim');
+    } else if (cc === c) {
+      cell.classList.add('sg-active');
+      cell.classList.remove('sg-dim');
+    } else {
+      cell.classList.remove('sg-active');
+      cell.classList.add('sg-dim');
+    }
+  });
+  // Update detail
+  const detail = document.getElementById('structureDetail');
+  if (c === null) {
+    detail.innerHTML = '';
+    return;
+  }
+  const pairs = [];
+  for (let a = Math.min(c-1, 9); a >= Math.ceil(c/2); a--) {
+    const b = c - a;
+    if (b >= 1 && b <= 9) pairs.push(`${a}+${b}`);
+  }
+  detail.innerHTML = `<div style="font-size:.95rem;font-weight:900;color:var(--text)"><span style="color:${rainbowColor(c)}">${c}</span> = ${pairs.join('，')}</div>`;
 }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function goHome() { clearInterval(timerInterval); stopCountdown(); updatePreview(); showScreen('startScreen'); }
