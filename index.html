@@ -99,7 +99,6 @@ body[data-skin="brainrot"] .start-btn:hover{box-shadow:0 0 40px rgba(0,245,212,.
 .c-btn{padding:10px 0;border:2px solid var(--border-subtle);border-radius:12px;font-size:1.1rem;font-weight:900;font-family:'Nunito',sans-serif;color:var(--text-light);background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:all .2s;text-align:center}
 .c-btn:hover{transform:translateY(-1px);border-color:var(--secondary)}
 .c-btn.selected{border-color:var(--btn2-selected-border);background:var(--btn2-selected-bg);color:var(--secondary);box-shadow:var(--glow-cyan)}
-.c-combos{font-size:.7rem;color:var(--text-light);margin-top:6px;line-height:1.5;text-align:center}
 
 .nav-row{display:flex;gap:10px;width:100%;margin-top:16px}
 .nav-btn{flex:1;background:var(--card);border:2px solid var(--border-subtle);border-radius:16px;padding:14px 10px;font-size:.9rem;font-weight:900;font-family:inherit;color:var(--text);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;text-align:center}
@@ -206,20 +205,6 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 .num-btn:active{transform:scale(.93);border-color:var(--primary);box-shadow:var(--glow-pink)}
 .num-btn.disabled{color:#333;pointer-events:none;box-shadow:none;border-color:#222}
 
-/* Voice */
-.voice-toggle-row{display:flex;align-items:center;gap:12px;width:100%}
-.voice-toggle-btn{display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:14px;border:2px solid var(--border-subtle);background:var(--card);font-family:inherit;font-size:.95rem;font-weight:900;color:var(--text-light);cursor:pointer;box-shadow:var(--shadow);transition:all .2s;flex-shrink:0}
-.voice-toggle-btn:hover{transform:translateY(-2px);border-color:var(--secondary)}
-.voice-toggle-btn.active{border-color:var(--btn2-selected-border);background:var(--btn2-selected-bg);color:var(--secondary);box-shadow:var(--glow-cyan)}
-.voice-toggle-icon{font-size:1.3rem}
-.voice-toggle-desc{font-size:.75rem;color:var(--text-light);line-height:1.3}
-
-.voice-status{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;padding:6px 14px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:.8rem;font-weight:700;color:var(--secondary);border:1px solid var(--border-subtle)}
-.voice-pulse{width:10px;height:10px;border-radius:50%;background:var(--secondary);animation:pulse 1s infinite;box-shadow:var(--glow-cyan)}
-.voice-status.error{color:var(--wrong)}
-.voice-status.error .voice-pulse{background:var(--wrong);animation:none;box-shadow:var(--glow-pink)}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-
 /* Result */
 .result-card{background:var(--card);border-radius:28px;box-shadow:var(--shadow-lg);padding:26px 22px;width:100%;text-align:center;position:relative;overflow:hidden;border:1px solid var(--border-subtle)}
 .result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--correct),var(--primary))}
@@ -259,6 +244,12 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 .hm-toggle-btn.active{border-color:var(--btn-selected-border);background:var(--btn-selected-bg);color:var(--primary);box-shadow:var(--glow-pink)}
 
 .btn-row{display:flex;gap:10px;margin-top:20px;width:100%}
+
+.structure-row{display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-subtle)}
+.structure-row:last-child{border-bottom:none}
+.structure-c{font-size:1.2rem;font-weight:900;color:var(--primary);min-width:36px;text-align:center;font-family:'Nunito',sans-serif}
+.structure-eq{font-size:.8rem;color:var(--text-light);font-weight:700}
+.structure-pairs{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.6;flex:1;flex-wrap:wrap}
 
 .improvement-section{margin-top:14px;text-align:left;width:100%}
 .improvement-title{font-family:var(--title-font);font-size:.95rem;font-weight:700;color:var(--correct);margin-bottom:8px;letter-spacing:1px}
@@ -313,12 +304,12 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
     <div class="mode-row">
       <button class="mode-btn selected" onclick="selectMode('adaptive',this)"><span class="mode-icon">🧠</span>アダプティブ</button>
       <button class="mode-btn" onclick="selectMode('focus',this)"><span class="mode-icon">🎯</span>和を指定</button>
+      <button class="mode-btn" onclick="showStructure()"><span class="mode-icon">🔍</span>和の構造</button>
     </div>
 
     <div class="c-selector" id="cSelector" style="display:none">
       <div class="section-label">🔢 練習する c（a + b = c）</div>
       <div class="c-grid" id="cGrid"></div>
-      <div class="c-combos" id="cCombos"></div>
     </div>
 
     <div class="section-label">🔢 問題数</div>
@@ -336,15 +327,6 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
       <button class="target-btn" data-target="3000" onclick="selectTarget(this)"><span class="target-time">3s</span>普通</button>
       <button class="target-btn" data-target="5000" onclick="selectTarget(this)"><span class="target-time">5s</span>ゆっくり</button>
       <button class="target-btn" data-target="10000" onclick="selectTarget(this)"><span class="target-time">10s</span>じっくり</button>
-    </div>
-
-    <div class="section-label">🎤 音声入力</div>
-    <div class="voice-toggle-row">
-      <button class="voice-toggle-btn" id="voiceToggleBtn" onclick="toggleVoice()">
-        <span class="voice-toggle-icon" id="voiceToggleIcon">🔇</span>
-        <span class="voice-toggle-text" id="voiceToggleText">OFF</span>
-      </button>
-      <span class="voice-toggle-desc" id="voiceToggleDesc">タップでONにすると声でも答えられるよ</span>
     </div>
 
     <div id="statsPreview" style="display:none;width:100%">
@@ -365,6 +347,19 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 
     <button class="reset-link" onclick="resetData()">記録をリセット</button>
     <button class="reset-link" id="skinToggleBtn" onclick="toggleSkin()">🎨 スキン切替</button>
+  </div>
+
+  <!-- ===== STRUCTURE ===== -->
+  <div id="structureScreen" class="screen">
+    <div class="assess-card">
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:2rem">🔍</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--text)">和の構造</div>
+        <div style="font-size:.75rem;color:var(--text-light);margin-top:4px">c = a + b（a ≥ b）の全組み合わせ</div>
+      </div>
+      <div id="structureList"></div>
+    </div>
+    <button class="back-btn" onclick="goHome()">← 戻る</button>
   </div>
 
   <!-- ===== ASSESSMENT ===== -->
@@ -440,10 +435,6 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
       </div>
       <div class="feedback" id="feedback"></div>
       <button class="next-btn" id="nextBtn" style="display:none" onclick="confirmNext()">次の問題へ →</button>
-    </div>
-    <div class="voice-status" id="voiceStatus" style="display:none">
-      <span class="voice-pulse" id="voicePulse"></span>
-      <span class="voice-status-text" id="voiceStatusText">🎤 聞いてるよ…</span>
     </div>
     <div class="numpad" id="numpad"></div>
   </div>
@@ -710,7 +701,6 @@ function buildCGrid() {
     btn.onclick = () => selectFocusC(c);
     grid.appendChild(btn);
   }
-  updateCCombos();
 }
 
 function selectFocusC(c) {
@@ -719,21 +709,24 @@ function selectFocusC(c) {
   document.querySelectorAll('.c-btn').forEach(b => {
     b.classList.toggle('selected', focusCSet.has(parseInt(b.textContent)));
   });
-  updateCCombos();
 }
 
-function updateCCombos() {
-  const el = document.getElementById('cCombos');
-  if (focusCSet.size === 0) { el.textContent = '数字を選んでね（複数OK）'; return; }
-  const allPairs = [];
-  focusCSet.forEach(c => {
-    for (let a = 1; a <= 9; a++) {
+function showStructure() {
+  const list = document.getElementById('structureList');
+  list.innerHTML = '';
+  for (let c = 2; c <= 18; c++) {
+    const pairs = [];
+    for (let a = Math.min(c-1, 9); a >= Math.ceil(c/2); a--) {
       const b = c - a;
-      if (b >= 1 && b <= 9) allPairs.push(`${a}+${b}`);
+      if (b >= 1 && b <= 9) pairs.push(`${a}+${b}`);
     }
-  });
-  const sorted = [...focusCSet].sort((a,b)=>a-b);
-  el.textContent = `c=${sorted.join(',')}: ${allPairs.length}組 × 6形式`;
+    if (pairs.length === 0) continue;
+    const row = document.createElement('div');
+    row.className = 'structure-row';
+    row.innerHTML = `<span class="structure-c">${c}</span><span class="structure-eq">=</span><span class="structure-pairs">${pairs.join('　')}</span>`;
+    list.appendChild(row);
+  }
+  showScreen('structureScreen');
 }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function goHome() { clearInterval(timerInterval); stopCountdown(); updatePreview(); showScreen('startScreen'); }
@@ -1390,150 +1383,6 @@ document.addEventListener('keydown',e=>{
   const k=parseInt(e.key); if(!isNaN(k)) handleAnswer(k);
 });
 
-// ===== VOICE RECOGNITION =====
-let voiceEnabled = false;
-let recognition = null;
-let voiceSupported = false;
-
-// Number word mapping (Japanese)
-const NUM_MAP = {
-  'いち':'1','に':'2','さん':'3','し':'4','よん':'4','ご':'5',
-  'ろく':'6','なな':'7','しち':'7','はち':'8','きゅう':'9','く':'9',
-  'じゅう':'10','じゅういち':'11','じゅうに':'12','じゅうさん':'13',
-  'じゅうし':'14','じゅうよん':'14','じゅうご':'15','じゅうろく':'16',
-  'じゅうなな':'17','じゅうしち':'17','じゅうはち':'18',
-  '一':'1','二':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9',
-  '十':'10','十一':'11','十二':'12','十三':'13','十四':'14','十五':'15',
-  '十六':'16','十七':'17','十八':'18',
-  '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
-  '10':'10','11':'11','12':'12','13':'13','14':'14','15':'15',
-  '16':'16','17':'17','18':'18',
-};
-
-function initVoice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    document.getElementById('voiceToggleDesc').textContent = 'このブラウザは音声未対応です';
-    document.getElementById('voiceToggleBtn').disabled = true;
-    document.getElementById('voiceToggleBtn').style.opacity = '0.4';
-    return;
-  }
-  voiceSupported = true;
-  recognition = new SR();
-  recognition.lang = 'ja-JP';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 5;
-
-  recognition.onresult = (e) => {
-    if (!canAnswer || !document.getElementById('gameScreen').classList.contains('active')) return;
-    // Check all results from the latest
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const result = e.results[i];
-      for (let j = 0; j < result.length; j++) {
-        const text = result[j].transcript.trim().replace(/\s/g, '');
-        const num = parseVoiceNumber(text);
-        if (num !== null) {
-          handleAnswer(num);
-          return;
-        }
-      }
-    }
-  };
-
-  recognition.onend = () => {
-    // Auto-restart if voice is enabled and game is active
-    if (voiceEnabled && document.getElementById('gameScreen').classList.contains('active')) {
-      try { recognition.start(); } catch(e) {}
-    }
-  };
-
-  recognition.onerror = (e) => {
-    if (e.error === 'not-allowed') {
-      const status = document.getElementById('voiceStatus');
-      status.className = 'voice-status error';
-      document.getElementById('voiceStatusText').textContent = '🎤 マイクが許可されていません';
-      voiceEnabled = false;
-      updateVoiceToggleUI();
-    }
-    // For other errors (no-speech, aborted), just let onend restart
-  };
-}
-
-function parseVoiceNumber(text) {
-  // Direct match
-  if (NUM_MAP[text] !== undefined) return parseInt(NUM_MAP[text]);
-  // Try extracting numbers from the string
-  for (const [key, val] of Object.entries(NUM_MAP)) {
-    if (text.includes(key)) return parseInt(val);
-  }
-  // Try parsing as raw digit
-  const n = parseInt(text);
-  if (!isNaN(n) && n >= 1 && n <= 18) return n;
-  return null;
-}
-
-function toggleVoice() {
-  if (!voiceSupported) return;
-  voiceEnabled = !voiceEnabled;
-  updateVoiceToggleUI();
-}
-
-function updateVoiceToggleUI() {
-  const btn = document.getElementById('voiceToggleBtn');
-  const icon = document.getElementById('voiceToggleIcon');
-  const text = document.getElementById('voiceToggleText');
-  const desc = document.getElementById('voiceToggleDesc');
-  if (voiceEnabled) {
-    btn.classList.add('active');
-    icon.textContent = '🎤';
-    text.textContent = 'ON';
-    desc.textContent = '声でもボタンでも答えられるよ';
-  } else {
-    btn.classList.remove('active');
-    icon.textContent = '🔇';
-    text.textContent = 'OFF';
-    desc.textContent = 'タップでONにすると声でも答えられるよ';
-  }
-}
-
-function startVoice() {
-  if (!voiceEnabled || !recognition) return;
-  const status = document.getElementById('voiceStatus');
-  status.style.display = 'flex';
-  status.className = 'voice-status';
-  document.getElementById('voiceStatusText').textContent = '🎤 聞いてるよ…';
-  try { recognition.start(); } catch(e) {}
-}
-
-function stopVoice() {
-  if (!recognition) return;
-  document.getElementById('voiceStatus').style.display = 'none';
-  try { recognition.stop(); } catch(e) {}
-}
-
-// Patch startGame to also start voice
-const _origStartGame = startGame;
-startGame = function() {
-  _origStartGame();
-  if (voiceEnabled) startVoice();
-};
-
-// Patch goHome to stop voice
-const _origGoHome = goHome;
-goHome = function() {
-  stopVoice();
-  _origGoHome();
-};
-
-// Patch endGame to stop voice
-const _origEndGame = endGame;
-endGame = function() {
-  stopVoice();
-  _origEndGame();
-};
-
-initVoice();
 updatePreview();
 
 // PWA: Service Worker registration
