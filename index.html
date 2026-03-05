@@ -154,7 +154,9 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
 .bimodal-chart-wrapper{position:relative;width:100%;margin-top:18px}
 
 /* Game */
-.top-bar{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px;gap:6px}
+.stop-btn{width:36px;height:36px;border-radius:50%;border:2px solid var(--border-subtle);background:var(--card);color:var(--text-light);font-size:1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.stop-btn:hover{border-color:var(--wrong);color:var(--wrong)}
 .stat-box{background:var(--card);border-radius:14px;padding:8px 14px;box-shadow:var(--shadow);text-align:center;min-width:70px;border:1px solid var(--border-subtle)}
 .stat-label{font-size:.65rem;color:var(--text-light);font-weight:700}
 .stat-value{font-size:1.2rem;font-weight:900;color:var(--text)}
@@ -421,6 +423,7 @@ body[data-skin="brainrot"] .assess-section-title{color:var(--accent);text-shadow
   <!-- ===== GAME ===== -->
   <div id="gameScreen" class="screen">
     <div class="top-bar">
+      <button class="stop-btn" onclick="confirmStop()">✕</button>
       <div class="stat-box"><div class="stat-label">スコア</div><div class="stat-value" id="scoreDisplay">0</div></div>
       <div class="stat-box"><div class="stat-label">タイム</div><div class="stat-value timer" id="timerDisplay">0.0</div></div>
       <div class="stat-box"><div class="stat-label">正解</div><div class="stat-value" id="correctDisplay">0/0</div></div>
@@ -521,7 +524,7 @@ const Q_TYPES = [
 let targetMs = 2000;
 let totalQuestions = 20;
 let gameMode = 'adaptive'; // 'adaptive' or 'focus'
-let focusC = null;
+let focusCSet = new Set();
 
 // ===== PERSISTENCE =====
 function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
@@ -649,8 +652,8 @@ function allQuestions() {
 
 function pickQuestion(history, recentKeys) {
   let qs = allQuestions();
-  if (gameMode === 'focus' && focusC !== null) {
-    qs = qs.filter(q => q.c === focusC);
+  if (gameMode === 'focus' && focusCSet.size > 0) {
+    qs = qs.filter(q => focusCSet.has(q.c));
   }
   if (qs.length === 0) qs = allQuestions();
   const g = computeGlobalThreshold(history);
@@ -693,7 +696,7 @@ function selectMode(mode, btn) {
     buildCGrid();
   } else {
     cSel.style.display = 'none';
-    focusC = null;
+    focusCSet.clear();
   }
 }
 
@@ -702,7 +705,7 @@ function buildCGrid() {
   grid.innerHTML = '';
   for (let c = 2; c <= 18; c++) {
     const btn = document.createElement('button');
-    btn.className = 'c-btn' + (focusC === c ? ' selected' : '');
+    btn.className = 'c-btn' + (focusCSet.has(c) ? ' selected' : '');
     btn.textContent = c;
     btn.onclick = () => selectFocusC(c);
     grid.appendChild(btn);
@@ -711,25 +714,30 @@ function buildCGrid() {
 }
 
 function selectFocusC(c) {
-  focusC = c;
+  if (focusCSet.has(c)) focusCSet.delete(c);
+  else focusCSet.add(c);
   document.querySelectorAll('.c-btn').forEach(b => {
-    b.classList.toggle('selected', parseInt(b.textContent) === c);
+    b.classList.toggle('selected', focusCSet.has(parseInt(b.textContent)));
   });
   updateCCombos();
 }
 
 function updateCCombos() {
   const el = document.getElementById('cCombos');
-  if (!focusC) { el.textContent = '数字を選んでね'; return; }
-  const pairs = [];
-  for (let a = 1; a <= 9; a++) {
-    const b = focusC - a;
-    if (b >= 1 && b <= 9) pairs.push(`${a}+${b}`);
-  }
-  el.textContent = `c=${focusC}: ${pairs.join('、 ')}（${pairs.length}組 × 6形式）`;
+  if (focusCSet.size === 0) { el.textContent = '数字を選んでね（複数OK）'; return; }
+  const allPairs = [];
+  focusCSet.forEach(c => {
+    for (let a = 1; a <= 9; a++) {
+      const b = c - a;
+      if (b >= 1 && b <= 9) allPairs.push(`${a}+${b}`);
+    }
+  });
+  const sorted = [...focusCSet].sort((a,b)=>a-b);
+  el.textContent = `c=${sorted.join(',')}: ${allPairs.length}組 × 6形式`;
 }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function goHome() { clearInterval(timerInterval); stopCountdown(); updatePreview(); showScreen('startScreen'); }
+function confirmStop() { if(confirm('トレーニングを中断しますか？')) goHome(); }
 function resetData() { if(confirm('記録を全部消しますか？')){ localStorage.removeItem(STORAGE_KEY); history={}; updatePreview(); } }
 
 function updatePreview() {
@@ -1024,7 +1032,7 @@ function buildNumpad() {
 
 // ===== GAME =====
 function startGame() {
-  if (gameMode === 'focus' && focusC === null) {
+  if (gameMode === 'focus' && focusCSet.size === 0) {
     alert('cの数字を選んでね！');
     return;
   }
