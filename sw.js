@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reflex-math-v1.1';
+const CACHE_NAME = 'reflex-math-v1.4';
 const ASSETS = [
   './',
   './index.html',
